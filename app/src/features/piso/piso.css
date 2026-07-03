@@ -1,0 +1,158 @@
+.piso {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.encabezado__usuario {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-weight: 700;
+}
+.piso__cuerpo {
+  padding: var(--esp-4);
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-6);
+}
+.piso__titulo {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-tinta-suave);
+  margin: 0 0 var(--esp-3);
+}
+
+/* Mesas */
+.mesas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--esp-3);
+}
+.mesa {
+  appearance: none;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--esp-4);
+  border-radius: var(--radio-lg);
+  border: 2px solid var(--color-borde);
+  background: var(--color-superficie);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  transition: border-color 0.15s ease, transform 0.04s ease;
+}
+.mesa:active {
+  transform: scale(0.99);
+}
+.mesa--ocupada {
+  border-color: var(--color-acento);
+  background: var(--color-acento-suave);
+}
+.mesa__numero {
+  font-size: var(--texto-2xl);
+  font-weight: 800;
+  line-height: 1;
+}
+.mesa__estado {
+  font-size: var(--texto-sm);
+  color: var(--color-tinta-suave);
+}
+.mesa__total {
+  font-size: var(--texto-lg);
+  font-weight: 700;
+}
+
+/* Barra */
+.barra {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--esp-3);
+}
+.barra__pedido {
+  appearance: none;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--esp-4);
+  border-radius: var(--radio-lg);
+  border: 1px solid var(--color-borde);
+  background: var(--color-superficie);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  min-height: 110px;
+}
+.barra__pedido:active {
+  transform: scale(0.99);
+}
+.barra__turno {
+  font-size: var(--texto-xl);
+  font-weight: 800;
+  color: var(--color-acento-fuerte);
+}
+.barra__cliente {
+  font-weight: 600;
+}
+.barra__meta {
+  margin-top: auto;
+  font-size: var(--texto-sm);
+  color: var(--color-tinta-suave);
+}
+.barra__nuevo {
+  border: 2px dashed var(--color-borde);
+  background: transparent;
+  color: var(--color-tinta-suave);
+  border-radius: var(--radio-lg);
+  min-height: 110px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--texto-md);
+}
+
+/* Modal simple */
+.modal__fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 25, 23, 0.4);
+  display: grid;
+  place-items: center;
+  padding: var(--esp-4);
+  z-index: 50;
+}
+.modal {
+  width: 100%;
+  max-width: 380px;
+  padding: var(--esp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+.modal h3 {
+  margin: 0;
+}
+.modal__acciones {
+  display: flex;
+  gap: var(--esp-3);
+}
+.piso__vacio {
+  color: var(--color-tinta-suave);
+  font-size: var(--texto-sm);
+}

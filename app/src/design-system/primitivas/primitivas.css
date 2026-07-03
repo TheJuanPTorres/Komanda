@@ -1,0 +1,141 @@
+/* Estilos de las primitivas del sistema de diseño. */
+
+/* ── Botón ─────────────────────────────────────────────────────────────── */
+.ds-boton {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: var(--radio);
+  font-size: var(--texto-md);
+  font-weight: 600;
+  min-height: var(--toque);
+  padding: 0 var(--esp-5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  cursor: pointer;
+  transition: transform 0.04s ease, background 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+}
+.ds-boton:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+.ds-boton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ds-boton--bloque {
+  width: 100%;
+}
+.ds-boton--grande {
+  min-height: 60px;
+  font-size: var(--texto-lg);
+}
+
+.ds-boton--primario {
+  background: var(--color-acento);
+  color: var(--color-sobre-acento);
+}
+.ds-boton--primario:hover:not(:disabled) {
+  background: var(--color-acento-fuerte);
+}
+.ds-boton--secundario {
+  background: var(--color-superficie);
+  color: var(--color-tinta);
+  border-color: var(--color-borde);
+}
+.ds-boton--secundario:hover:not(:disabled) {
+  background: var(--color-superficie-2);
+}
+.ds-boton--fantasma {
+  background: transparent;
+  color: var(--color-tinta-suave);
+}
+.ds-boton--fantasma:hover:not(:disabled) {
+  background: rgba(28, 25, 23, 0.05);
+}
+.ds-boton--peligro {
+  background: var(--color-peligro-suave);
+  color: var(--color-peligro);
+}
+.ds-boton--peligro:hover:not(:disabled) {
+  background: #fbcaca;
+}
+
+/* ── Tarjeta ───────────────────────────────────────────────────────────── */
+.ds-tarjeta {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-1);
+}
+
+/* ── Campo (input) ─────────────────────────────────────────────────────── */
+.ds-campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+.ds-campo__etiqueta {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--color-tinta-suave);
+}
+.ds-campo__control {
+  min-height: var(--toque);
+  padding: 0 var(--esp-4);
+  font-size: var(--texto-md);
+  color: var(--color-tinta);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  outline: none;
+}
+.ds-campo__control:focus {
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 3px var(--color-acento-suave);
+}
+
+/* ── Insignia ──────────────────────────────────────────────────────────── */
+.ds-insignia {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  padding: 2px var(--esp-2);
+  border-radius: var(--radio-full);
+  background: var(--color-superficie-2);
+  color: var(--color-tinta-suave);
+  border: 1px solid var(--color-borde);
+}
+.ds-insignia--acento {
+  background: var(--color-acento-suave);
+  color: var(--color-acento-fuerte);
+  border-color: transparent;
+}
+.ds-insignia--exito {
+  background: var(--color-exito-suave);
+  color: var(--color-exito);
+  border-color: transparent;
+}
+
+/* ── Cargando ──────────────────────────────────────────────────────────── */
+.ds-cargando {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-borde);
+  border-top-color: var(--color-acento);
+  border-radius: 50%;
+  animation: ds-girar 0.8s linear infinite;
+}
+.ds-cargando--pantalla {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+@keyframes ds-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}

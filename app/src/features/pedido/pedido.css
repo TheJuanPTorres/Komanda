@@ -1,0 +1,217 @@
+.pedido {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.pedido__enc {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.pedido__volver {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-size: var(--texto-xl);
+  cursor: pointer;
+  padding: var(--esp-2);
+  border-radius: var(--radio);
+  line-height: 1;
+}
+.pedido__titulo {
+  display: flex;
+  flex-direction: column;
+}
+.pedido__titulo strong {
+  font-size: var(--texto-lg);
+}
+.pedido__titulo span {
+  font-size: var(--texto-sm);
+  color: var(--color-tinta-suave);
+}
+.pedido__enc-total {
+  margin-left: auto;
+  text-align: right;
+}
+.pedido__enc-total span {
+  display: block;
+  font-size: var(--texto-xs);
+  color: var(--color-tinta-suave);
+}
+.pedido__enc-total strong {
+  font-size: var(--texto-lg);
+}
+
+.pedido__cols {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 0;
+}
+@media (min-width: 880px) {
+  .pedido__cols {
+    grid-template-columns: 1fr 380px;
+  }
+}
+
+/* Menú */
+.menu {
+  padding: var(--esp-4);
+  overflow-y: auto;
+}
+.menu__cat {
+  margin-bottom: var(--esp-5);
+}
+.menu__cat-titulo {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-tinta-suave);
+  margin: 0 0 var(--esp-3);
+}
+.menu__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--esp-3);
+}
+.producto {
+  position: relative;
+  appearance: none;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--esp-4);
+  border-radius: var(--radio);
+  border: 1px solid var(--color-borde);
+  background: var(--color-superficie);
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--esp-2);
+}
+.producto:active {
+  transform: scale(0.98);
+}
+.producto:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.producto__nombre {
+  font-weight: 600;
+  line-height: 1.2;
+}
+.producto__precio {
+  color: var(--color-tinta-suave);
+  font-size: var(--texto-sm);
+}
+.producto__cantidad {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--radio-full);
+  background: var(--color-acento);
+  color: var(--color-sobre-acento);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+/* Cuenta */
+.cuenta {
+  border-top: 1px solid var(--color-borde);
+  background: var(--color-superficie-2);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+@media (min-width: 880px) {
+  .cuenta {
+    border-top: none;
+    border-left: 1px solid var(--color-borde);
+  }
+}
+.cuenta__lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+}
+.item__info {
+  flex: 1;
+  min-width: 0;
+}
+.item__nombre {
+  font-weight: 600;
+}
+.item__sub {
+  font-size: var(--texto-sm);
+  color: var(--color-tinta-suave);
+}
+.item__cant {
+  font-weight: 700;
+  min-width: 28px;
+  text-align: center;
+}
+.paso {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radio-sm);
+  border: 1px solid var(--color-borde);
+  background: var(--color-superficie);
+  font-size: var(--texto-lg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.paso:active {
+  transform: translateY(1px);
+}
+.cuenta__vacia {
+  color: var(--color-tinta-suave);
+  text-align: center;
+  padding: var(--esp-6) var(--esp-4);
+}
+.cuenta__pie {
+  padding: var(--esp-4);
+  border-top: 1px solid var(--color-borde);
+  background: var(--color-superficie);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+.cuenta__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.cuenta__total strong {
+  font-size: var(--texto-2xl);
+}
+.pedido__cargando {
+  flex: 1;
+  display: grid;
+  place-items: center;
+}

@@ -1,0 +1,37 @@
+.pwa-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(var(--esp-4), env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-3) var(--esp-3) var(--esp-4);
+  background: var(--color-tinta);
+  color: #fff;
+  border-radius: var(--radio-full);
+  box-shadow: var(--sombra-2);
+  font-size: var(--texto-sm);
+  max-width: calc(100vw - var(--esp-6));
+}
+.pwa-toast__actualizar {
+  appearance: none;
+  border: none;
+  background: var(--color-acento);
+  color: var(--color-sobre-acento);
+  font-weight: 700;
+  padding: var(--esp-2) var(--esp-4);
+  border-radius: var(--radio-full);
+  cursor: pointer;
+}
+.pwa-toast__cerrar {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #fff;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: var(--texto-md);
+  padding: var(--esp-1) var(--esp-2);
+}

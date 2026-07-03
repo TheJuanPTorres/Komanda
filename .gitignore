@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# Base de datos local (se genera con migraciones + seed)
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+
+# Variables de entorno
+.env
+.env.local
