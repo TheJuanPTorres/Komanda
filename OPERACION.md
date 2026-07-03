@@ -102,7 +102,46 @@ En los celulares/tablets aparecerá un aviso **"Hay una versión nueva ·
 Actualizar"**: al tocarlo, se recarga con la versión nueva. Nunca se recarga
 solo a mitad de un pedido.
 
-## 7. Reglas del negocio grabadas en el sistema
+## 7. Lector de pagos por correo (opcional)
+
+El **lector** (`pos-lector` en PM2) es un proceso aparte que revisa un buzón de
+correo por IMAP, lee los avisos de pago del banco (Bre-B) y los **concilia**
+con los pagos QR registrados en caja. El resultado se ve en la app en
+**Reportes → Conciliación** (descuadres: pagos QR sin correo, y correos sin
+pago registrado).
+
+Es **opcional**: sin credenciales, `pos-lector` arranca pero no hace nada.
+
+Para activarlo, define estas variables de entorno del sistema (en Windows,
+`setx` como administrador y reinicia PM2), luego `pm2 restart pos-lector`:
+
+```
+IMAP_HOST     = imap.tuproveedor.com
+IMAP_PORT     = 993
+IMAP_USER     = correo-del-negocio@tuproveedor.com
+IMAP_PASS     = (contraseña de aplicación del correo)
+IMAP_BUZON    = INBOX
+LECTOR_REMITENTE = notificaciones@tubanco.com   (opcional, filtra por remitente)
+```
+
+Si el formato del correo de tu banco no cuadra, ajusta los patrones de
+extracción (son expresiones regulares con un grupo de captura):
+
+```
+LECTOR_PATRON_MONTO = \$\s*([\d.,]+)
+LECTOR_PATRON_REF   = (?:referencia|ref|cus)\s*[:#]?\s*([A-Za-z0-9-]{4,})
+```
+
+Puedes probar el parser y la conciliación **sin conectarte al buzón** con:
+
+```bash
+npm run lector:probar
+```
+
+> El lector nunca borra correos: solo los marca como leídos para no
+> reprocesarlos, y guarda cada aviso en la base para auditoría.
+
+## 8. Reglas del negocio grabadas en el sistema
 
 - **Solo el administrador cobra y cierra pedidos.** Se valida en el servidor.
 - El dinero se maneja en pesos enteros (sin centavos).
@@ -110,7 +149,7 @@ solo a mitad de un pedido.
 - Al vender se guarda una foto del precio y costo del producto: por eso el
   reporte de margen es fiel aunque después cambien los precios.
 
-## 8. Problemas comunes
+## 9. Problemas comunes
 
 - **Un celular no carga**: revisa que esté en el mismo WiFi y que la IP sea la
   correcta. Prueba `http://IP:3000/api/salud` en el navegador de la caja.

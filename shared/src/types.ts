@@ -3,6 +3,7 @@
 // Las FECHAS son TEXT ISO 8601 en UTC tal como las guarda SQLite (datetime('now')).
 
 export type Rol = 'admin' | 'mesero';
+export type EstadoNotificacion = 'pendiente' | 'conciliado' | 'sin_pago';
 export type TipoPedido = 'mesa' | 'barra';
 export type EstadoPedido = 'abierto' | 'cobrado' | 'cancelado';
 export type MetodoPago = 'efectivo' | 'qr_breb';
@@ -294,4 +295,44 @@ export interface ReporteVentas {
     num_pedidos: number;
     ticket_promedio: number;
   };
+}
+
+// ── Conciliación de pagos QR (Fase 7) ────────────────────────────────────
+// Un pago QR "conciliado" es el que tiene un correo del banco que lo respalda.
+// El lector (proceso aparte) llena notificaciones_pago; aquí solo se lee.
+
+export interface NotificacionPago {
+  id: number;
+  mensaje_id: string | null;
+  asunto: string;
+  remitente: string;
+  monto: number | null;
+  referencia: string | null;
+  fecha_correo: string | null;
+  pago_id: number | null;
+  estado: EstadoNotificacion;
+  creado_en: string;
+}
+
+// Un pago QR que aún no tiene correo del banco que lo respalde.
+export interface PagoSinConciliar {
+  pago_id: number;
+  pedido_id: number;
+  monto: number;
+  referencia_externa: string | null;
+  creado_en: string;
+}
+
+export interface ReporteConciliacion {
+  rango: RangoFechas;
+  resumen: {
+    pagos_qr: number; // # de pagos QR en el rango
+    conciliados: number; // # de pagos QR con correo del banco
+    pagos_sin_correo: number; // pagos QR sin correo (revisar)
+    correos_sin_pago: number; // correos del banco sin pago (revisar)
+  };
+  // Correos del banco que no cruzaron con ningún pago registrado.
+  sin_pago: NotificacionPago[];
+  // Pagos QR sin un correo que los respalde.
+  pagos_sin_conciliar: PagoSinConciliar[];
 }

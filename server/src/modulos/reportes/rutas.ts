@@ -1,9 +1,9 @@
 // Rutas de reportes. Solo admin (información de gestión del negocio).
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import type { ReporteMargen, ReporteVentas } from '@pos/shared';
+import type { ReporteConciliacion, ReporteMargen, ReporteVentas } from '@pos/shared';
 import { requiereRol } from '../auth/middleware.js';
-import { reporteMargen, reporteVentas } from './servicio.js';
+import { reporteConciliacion, reporteMargen, reporteVentas } from './servicio.js';
 
 // Valida un rango de fechas YYYY-MM-DD con desde <= hasta.
 const rangoSchema = z
@@ -26,5 +26,12 @@ export async function rutasReportes(app: FastifyInstance): Promise<void> {
   app.get('/api/reportes/ventas', { preHandler: requiereRol('admin') }, async (req) => {
     const rango = rangoSchema.parse(req.query);
     return { reporte: reporteVentas(rango) satisfies ReporteVentas };
+  });
+
+  // GET /api/reportes/conciliacion?desde=&hasta= — cruce de pagos QR con los
+  // correos del banco (lo que dejó el lector). Muestra los descuadres.
+  app.get('/api/reportes/conciliacion', { preHandler: requiereRol('admin') }, async (req) => {
+    const rango = rangoSchema.parse(req.query);
+    return { reporte: reporteConciliacion(rango) satisfies ReporteConciliacion };
   });
 }

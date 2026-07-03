@@ -187,6 +187,11 @@
   text-align: center;
   padding: var(--esp-6);
 }
+.rep-nota {
+  font-size: var(--texto-sm);
+  color: var(--color-tinta-suave);
+  margin: 0;
+}
 .rep-seccion {
   display: flex;
   flex-direction: column;

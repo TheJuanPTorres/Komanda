@@ -7,7 +7,10 @@
 import { db } from '../../db/conexion.js';
 import type {
   MargenProducto,
+  NotificacionPago,
+  PagoSinConciliar,
   RangoFechas,
+  ReporteConciliacion,
   ReporteMargen,
   ReporteVentas,
   VentasPorDia,
@@ -145,5 +148,63 @@ export function reporteVentas(rango: RangoFechas): ReporteVentas {
       num_pedidos,
       ticket_promedio: num_pedidos > 0 ? Math.round(total / num_pedidos) : 0
     }
+  };
+}
+
+// ── Conciliación de pagos QR (Fase 7) ──────────────────────────────────────
+// El servidor solo LEE lo que el lector (proceso aparte) escribió en
+// notificaciones_pago. Muestra los descuadres para revisión.
+
+export function reporteConciliacion(rango: RangoFechas): ReporteConciliacion {
+  const { desdeUtc, hastaUtc } = rangoUtcDesdeFechas(rango.desde, rango.hasta);
+
+  const pagosQr = db
+    .prepare(
+      "SELECT COUNT(*) AS n FROM pagos WHERE metodo = 'qr_breb' AND creado_en >= ? AND creado_en < ?"
+    )
+    .get(desdeUtc, hastaUtc) as { n: number };
+
+  const conciliados = db
+    .prepare(
+      `SELECT COUNT(*) AS n
+         FROM pagos p
+        WHERE p.metodo = 'qr_breb' AND p.creado_en >= ? AND p.creado_en < ?
+          AND EXISTS (SELECT 1 FROM notificaciones_pago n WHERE n.pago_id = p.id)`
+    )
+    .get(desdeUtc, hastaUtc) as { n: number };
+
+  // Pagos QR sin un correo del banco que los respalde.
+  const pagos_sin_conciliar = db
+    .prepare(
+      `SELECT p.id AS pago_id, p.pedido_id AS pedido_id, p.monto AS monto,
+              p.referencia_externa AS referencia_externa, p.creado_en AS creado_en
+         FROM pagos p
+        WHERE p.metodo = 'qr_breb' AND p.creado_en >= ? AND p.creado_en < ?
+          AND NOT EXISTS (SELECT 1 FROM notificaciones_pago n WHERE n.pago_id = p.id)
+        ORDER BY p.creado_en DESC`
+    )
+    .all(desdeUtc, hastaUtc) as PagoSinConciliar[];
+
+  // Correos del banco que no cruzaron con ningún pago registrado.
+  const sin_pago = db
+    .prepare(
+      `SELECT id, mensaje_id, asunto, remitente, monto, referencia, fecha_correo,
+              pago_id, estado, creado_en
+         FROM notificaciones_pago
+        WHERE estado = 'sin_pago' AND creado_en >= ? AND creado_en < ?
+        ORDER BY creado_en DESC`
+    )
+    .all(desdeUtc, hastaUtc) as NotificacionPago[];
+
+  return {
+    rango,
+    resumen: {
+      pagos_qr: pagosQr.n,
+      conciliados: conciliados.n,
+      pagos_sin_correo: pagosQr.n - conciliados.n,
+      correos_sin_pago: sin_pago.length
+    },
+    sin_pago,
+    pagos_sin_conciliar
   };
 }

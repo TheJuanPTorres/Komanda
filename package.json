@@ -7,11 +7,14 @@
   "workspaces": [
     "shared",
     "server",
-    "app"
+    "app",
+    "lector"
   ],
   "scripts": {
-    "build": "npm run build -w @pos/shared && npm run build -w @pos/server && npm run build -w @pos/app",
+    "build": "npm run build -w @pos/shared && npm run build -w @pos/server && npm run build -w @pos/app && npm run build -w @pos/lector",
     "dev": "npm run build -w @pos/shared && npm run dev -w @pos/server",
+    "lector": "npm run dev -w @pos/lector",
+    "lector:probar": "npm run probar -w @pos/lector",
     "dev:app": "npm run dev -w @pos/app",
     "start": "npm run start -w @pos/server",
     "seed": "npm run seed -w @pos/server",

@@ -1,0 +1,26 @@
+{
+  "name": "@pos/lector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "probar": "tsx src/probar.ts"
+  },
+  "dependencies": {
+    "@pos/shared": "*",
+    "better-sqlite3": "^12.2.0",
+    "imapflow": "^1.0.171",
+    "mailparser": "^3.7.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/mailparser": "^3.4.5",
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

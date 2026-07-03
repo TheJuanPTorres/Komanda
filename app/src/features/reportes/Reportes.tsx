@@ -1,16 +1,17 @@
 // Reportes (solo admin): margen por producto y ventas por día/hora.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { ReporteMargen, ReporteVentas } from '@pos/shared';
+import type { ReporteConciliacion, ReporteMargen, ReporteVentas } from '@pos/shared';
 import { api } from '../../lib/api.js';
 import { pesos } from '../../lib/dinero.js';
+import { hora } from '../../lib/fechas.js';
 import { hoyBogota, restarDias } from '../../lib/periodos.js';
 import { Cargando, Tarjeta } from '../../design-system/primitivas/index.js';
 import '../comunes/pagina.css';
 import './reportes.css';
 
 type Preset = 'hoy' | '7' | '30' | 'custom';
-type Pestana = 'margen' | 'ventas';
+type Pestana = 'margen' | 'ventas' | 'conciliacion';
 
 export function Reportes() {
   const navegar = useNavigate();
@@ -23,6 +24,7 @@ export function Reportes() {
 
   const [margen, setMargen] = useState<ReporteMargen | null>(null);
   const [ventas, setVentas] = useState<ReporteVentas | null>(null);
+  const [conciliacion, setConciliacion] = useState<ReporteConciliacion | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -47,11 +49,13 @@ export function Reportes() {
     const q = `desde=${desde}&hasta=${hasta}`;
     Promise.all([
       api.get<{ reporte: ReporteMargen }>(`/api/reportes/margen?${q}`),
-      api.get<{ reporte: ReporteVentas }>(`/api/reportes/ventas?${q}`)
+      api.get<{ reporte: ReporteVentas }>(`/api/reportes/ventas?${q}`),
+      api.get<{ reporte: ReporteConciliacion }>(`/api/reportes/conciliacion?${q}`)
     ])
-      .then(([m, v]) => {
+      .then(([m, v, c]) => {
         setMargen(m.reporte);
         setVentas(v.reporte);
+        setConciliacion(c.reporte);
       })
       .catch(() => setError('No se pudieron cargar los reportes.'))
       .finally(() => setCargando(false));
@@ -135,6 +139,12 @@ export function Reportes() {
           >
             Ventas
           </button>
+          <button
+            className={`rep-tab ${pestana === 'conciliacion' ? 'rep-tab--activa' : ''}`}
+            onClick={() => setPestana('conciliacion')}
+          >
+            Conciliación
+          </button>
         </div>
 
         {error && <div className="acceso__error">{error}</div>}
@@ -143,8 +153,10 @@ export function Reportes() {
           <Cargando />
         ) : pestana === 'margen' ? (
           <TablaMargen margen={margen} />
-        ) : (
+        ) : pestana === 'ventas' ? (
           <SeccionVentas ventas={ventas} maxDia={maxDia} maxHora={maxHora} />
+        ) : (
+          <SeccionConciliacion conciliacion={conciliacion} />
         )}
       </div>
     </div>
@@ -273,6 +285,103 @@ function SeccionVentas({
           <span>23h</span>
         </div>
       </section>
+    </>
+  );
+}
+
+function SeccionConciliacion({ conciliacion }: { conciliacion: ReporteConciliacion | null }) {
+  if (!conciliacion) return <div className="rep-vacio">Sin datos.</div>;
+  const { resumen, sin_pago, pagos_sin_conciliar } = conciliacion;
+  const todoCuadra =
+    resumen.pagos_qr > 0 && sin_pago.length === 0 && pagos_sin_conciliar.length === 0;
+
+  return (
+    <>
+      <div className="rep-totales">
+        <Tarjeta className="rep-total">
+          <span>Pagos QR</span>
+          <strong>{resumen.pagos_qr}</strong>
+        </Tarjeta>
+        <Tarjeta className="rep-total">
+          <span>Con correo del banco</span>
+          <strong>{resumen.conciliados}</strong>
+        </Tarjeta>
+        <Tarjeta className="rep-total">
+          <span>QR sin correo</span>
+          <strong>{resumen.pagos_sin_correo}</strong>
+        </Tarjeta>
+        <Tarjeta className="rep-total">
+          <span>Correos sin pago</span>
+          <strong>{resumen.correos_sin_pago}</strong>
+        </Tarjeta>
+      </div>
+
+      <p className="rep-nota">
+        La conciliación la alimenta el lector de correos (proceso aparte). Si no está configurado,
+        estas listas mostrarán todos los pagos QR como "sin correo".
+      </p>
+
+      {todoCuadra && <div className="cierre-banner">Todo cuadra: cada pago QR tiene su correo.</div>}
+
+      {pagos_sin_conciliar.length > 0 && (
+        <section className="rep-seccion">
+          <h2 className="pagina__seccion-titulo">Pagos QR sin correo del banco</h2>
+          <Tarjeta className="rep-tabla-cont">
+            <table className="rep-tabla">
+              <thead>
+                <tr>
+                  <th>Pedido</th>
+                  <th>Monto</th>
+                  <th>Referencia</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagos_sin_conciliar.map((p) => (
+                  <tr key={p.pago_id}>
+                    <td className="rep-tabla__nombre">#{p.pedido_id}</td>
+                    <td>{pesos(p.monto)}</td>
+                    <td>{p.referencia_externa ?? '—'}</td>
+                    <td>{hora(p.creado_en)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Tarjeta>
+        </section>
+      )}
+
+      {sin_pago.length > 0 && (
+        <section className="rep-seccion">
+          <h2 className="pagina__seccion-titulo">Correos del banco sin pago registrado</h2>
+          <Tarjeta className="rep-tabla-cont">
+            <table className="rep-tabla">
+              <thead>
+                <tr>
+                  <th>Asunto</th>
+                  <th>Monto</th>
+                  <th>Referencia</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sin_pago.map((n) => (
+                  <tr key={n.id}>
+                    <td className="rep-tabla__nombre">{n.asunto || n.remitente || '—'}</td>
+                    <td>{n.monto !== null ? pesos(n.monto) : '—'}</td>
+                    <td>{n.referencia ?? '—'}</td>
+                    <td>{hora(n.creado_en)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Tarjeta>
+        </section>
+      )}
+
+      {resumen.pagos_qr === 0 && sin_pago.length === 0 && (
+        <div className="rep-vacio">No hubo pagos QR ni correos en este periodo.</div>
+      )}
     </>
   );
 }
