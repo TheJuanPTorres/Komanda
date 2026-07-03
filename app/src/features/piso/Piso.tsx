@@ -1,12 +1,13 @@
 // Piso: las 4 mesas y los pedidos de barra abiertos, en tiempo real.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import type { PedidoConItems } from '@pos/shared';
 import { useStore } from '../../estado/store.js';
-import { pesos } from '../../lib/dinero.js';
-import { contarUnidades, turnoBarra } from '../../lib/etiquetas.js';
+import { turnoBarra } from '../../lib/etiquetas.js';
 import { ErrorApi } from '../../lib/api.js';
-import { Boton, Campo, Insignia, Tarjeta } from '../../design-system/primitivas/index.js';
+import { Boton, Campo, Modal, TarjetaMesa } from '../../design-system/index.js';
+import { Encabezado } from '../comunes/Encabezado.js';
 import './piso.css';
 
 const MESAS = [1, 2, 3, 4];
@@ -27,7 +28,6 @@ export function Piso() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Carga inicial; a partir de aquí todo llega por WS.
     cargarMenu().catch(() => setError('No se pudo cargar el menú.'));
     cargarPedidos().catch(() => setError('No se pudieron cargar los pedidos.'));
   }, [cargarMenu, cargarPedidos]);
@@ -66,124 +66,112 @@ export function Piso() {
     }
   }
 
+  const acciones = (
+    <>
+      {sesion?.rol === 'admin' && (
+        <>
+          <Boton variante="secundario" onClick={() => navegar('/gastos')}>
+            Gastos
+          </Boton>
+          <Boton variante="secundario" onClick={() => navegar('/reportes')}>
+            Reportes
+          </Boton>
+          <Boton variante="secundario" onClick={() => navegar('/cierre')}>
+            Cierre
+          </Boton>
+        </>
+      )}
+      <Boton variante="fantasma" onClick={() => salir()}>
+        Salir
+      </Boton>
+    </>
+  );
+
   return (
     <div className="piso">
-      <header className="encabezado">
-        <div className="encabezado__usuario">
-          {sesion?.nombre}
-          <Insignia tono={sesion?.rol === 'admin' ? 'acento' : 'neutro'}>
-            {sesion?.rol === 'admin' ? 'Admin' : 'Mesero'}
-          </Insignia>
-        </div>
-        <div className="fila" style={{ gap: 'var(--esp-2)' }}>
-          {sesion?.rol === 'admin' && (
-            <>
-              <Boton variante="secundario" onClick={() => navegar('/gastos')}>
-                Gastos
-              </Boton>
-              <Boton variante="secundario" onClick={() => navegar('/reportes')}>
-                Reportes
-              </Boton>
-              <Boton variante="secundario" onClick={() => navegar('/cierre')}>
-                Cierre
-              </Boton>
-            </>
-          )}
-          <Boton variante="fantasma" onClick={() => salir()}>
-            Salir
-          </Boton>
-        </div>
-      </header>
+      <Encabezado
+        titulo={sesion?.nombre ?? ''}
+        subtitulo={sesion?.rol === 'admin' ? 'Administrador' : 'Mesero'}
+        acciones={acciones}
+      />
 
       <div className="piso__cuerpo">
-        {error && <div className="acceso__error">{error}</div>}
+        {error && <div className="aviso-error">{error}</div>}
 
         <section>
-          <h2 className="piso__titulo">Mesas</h2>
-          <div className="mesas">
+          <h2 className="seccion-titulo">Mesas</h2>
+          <div className="piso__mesas">
             {MESAS.map((n) => {
               const p = pedidoDeMesa(n);
               return (
-                <button
+                <TarjetaMesa
                   key={n}
-                  className={`mesa ${p ? 'mesa--ocupada' : ''}`}
+                  numero={n}
+                  estado={p ? 'ocupada' : 'libre'}
+                  total={p?.total}
                   onClick={() => tocarMesa(n)}
-                  disabled={ocupado}
-                >
-                  <span className="mesa__numero">{n}</span>
-                  {p ? (
-                    <>
-                      <span className="mesa__estado">
-                        {contarUnidades(p.items)} ítem(s) · ocupada
-                      </span>
-                      <span className="mesa__total">{pesos(p.total)}</span>
-                    </>
-                  ) : (
-                    <span className="mesa__estado">Libre · toca para abrir</span>
-                  )}
-                </button>
+                />
               );
             })}
           </div>
         </section>
 
         <section>
-          <h2 className="piso__titulo">Barra</h2>
-          <div className="barra">
+          <h2 className="seccion-titulo">Barra</h2>
+          <div className="piso__barra">
             {pedidosBarra.map((p) => (
-              <button
+              <TarjetaMesa
                 key={p.pedido.id}
-                className="barra__pedido"
+                variante="barra"
+                turno={turnoBarra(p.pedido.turno)}
+                cliente={p.pedido.cliente_nombre ?? ''}
+                estado="ocupada"
+                total={p.total}
                 onClick={() => navegar(`/pedido/${p.pedido.id}`)}
-              >
-                <span className="barra__turno">{turnoBarra(p.pedido.turno)}</span>
-                <span className="barra__cliente">{p.pedido.cliente_nombre}</span>
-                <span className="barra__meta">
-                  {contarUnidades(p.items)} ítem(s) · {pesos(p.total)}
-                </span>
-              </button>
+              />
             ))}
-            <button className="barra__nuevo" onClick={() => setNuevoBarra(true)} disabled={ocupado}>
-              + Nuevo pedido de barra
+            <button className="piso__nuevo" onClick={() => setNuevoBarra(true)} disabled={ocupado}>
+              <Plus size={24} strokeWidth={2.25} />
+              Nuevo de barra
             </button>
-            {pedidosBarra.length === 0 && (
-              <span className="piso__vacio">No hay pedidos de barra abiertos.</span>
-            )}
           </div>
+          {pedidosBarra.length === 0 && (
+            <p className="vacio">
+              <strong>Nada en la barra.</strong>
+              Toca “Nuevo de barra” para el primer turno.
+            </p>
+          )}
         </section>
       </div>
 
       {nuevoBarra && (
-        <div className="modal__fondo" onClick={() => !ocupado && setNuevoBarra(false)}>
-          <Tarjeta className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Nuevo pedido de barra</h3>
-            <Campo
-              etiqueta="Nombre del cliente"
-              value={cliente}
-              autoFocus
-              maxLength={60}
-              onChange={(e) => setCliente(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && confirmarBarra()}
-              placeholder="Ej: Pedro"
-            />
-            <div className="modal__acciones">
-              <Boton
-                variante="secundario"
-                bloque
-                onClick={() => {
-                  setNuevoBarra(false);
-                  setCliente('');
-                }}
-                disabled={ocupado}
-              >
-                Cancelar
-              </Boton>
-              <Boton bloque onClick={confirmarBarra} disabled={ocupado || !cliente.trim()}>
-                Crear
-              </Boton>
-            </div>
-          </Tarjeta>
-        </div>
+        <Modal titulo="Nuevo pedido de barra" onCerrar={() => !ocupado && setNuevoBarra(false)}>
+          <Campo
+            etiqueta="Nombre del cliente"
+            value={cliente}
+            autoFocus
+            maxLength={60}
+            onChange={(e) => setCliente(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && confirmarBarra()}
+            placeholder="Ej: Pedro"
+          />
+          <div className="ds-modal__acciones">
+            <Boton
+              variante="secundario"
+              bloque
+              disabled={ocupado}
+              onClick={() => {
+                setNuevoBarra(false);
+                setCliente('');
+              }}
+            >
+              Cancelar
+            </Boton>
+            <Boton bloque disabled={ocupado || !cliente.trim()} onClick={confirmarBarra}>
+              Crear
+            </Boton>
+          </div>
+        </Modal>
       )}
     </div>
   );

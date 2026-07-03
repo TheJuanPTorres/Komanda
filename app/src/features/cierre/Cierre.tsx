@@ -1,17 +1,16 @@
-// Cierre de caja del día (solo admin). Muestra las ventas y gastos del día,
-// permite escribir la base y el efectivo contado, y calcula la diferencia.
-// Uno por día: si ya se cerró, se muestra en solo lectura.
+// Cierre de caja del día (solo admin). Muestra ventas y gastos del día, permite
+// escribir base y efectivo contado, y calcula la diferencia. Uno por día: si ya
+// se cerró, se muestra en solo lectura.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { CierreCaja, CierrePreview } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
-import { pesos } from '../../lib/dinero.js';
 import { aEnteroDesdeTexto } from '../../lib/numeros.js';
-import { Boton, Campo, Cargando, Tarjeta } from '../../design-system/primitivas/index.js';
-import '../comunes/pagina.css';
+import { Boton, Campo, Tarjeta, formatearDinero } from '../../design-system/index.js';
+import { Encabezado } from '../comunes/Encabezado.js';
+import { Cargando } from '../comunes/Cargando.js';
 import './cierre.css';
 
-// Fila etiqueta/valor. `tono` colorea el valor (resta en rojo, suma en verde).
 function Linea({
   etiqueta,
   valor,
@@ -25,31 +24,32 @@ function Linea({
 }) {
   return (
     <div className={`cierre-linea ${fuerte ? 'cierre-linea--fuerte' : ''}`}>
-      <span className="cierre-linea__etiqueta">{etiqueta}</span>
-      <span className={`cierre-linea__valor ${tono ? `cierre-linea__valor--${tono}` : ''}`}>
-        {valor}
-      </span>
+      <span className="cierre-linea__etq">{etiqueta}</span>
+      <span className={`cierre-linea__val ${tono ? `cierre-linea__val--${tono}` : ''}`}>{valor}</span>
     </div>
   );
 }
 
-// Resumen de un cierre ya registrado (solo lectura).
+function claseYtexto(diferencia: number): [string, string] {
+  if (diferencia === 0) return ['cierre-dif--cuadra', 'Cuadra'];
+  if (diferencia < 0) return ['cierre-dif--falta', 'Faltante'];
+  return ['cierre-dif--sobra', 'Sobrante'];
+}
+
 function ResumenCierre({ c }: { c: CierreCaja }) {
-  const claseDif =
-    c.diferencia === 0 ? 'cierre-dif--cuadra' : c.diferencia < 0 ? 'cierre-dif--falta' : 'cierre-dif--sobra';
-  const textoDif = c.diferencia === 0 ? 'Cuadra' : c.diferencia < 0 ? 'Faltante' : 'Sobrante';
+  const [clase, texto] = claseYtexto(c.diferencia);
   return (
     <Tarjeta className="cierre-card">
-      <Linea etiqueta="Base inicial" valor={pesos(c.base_inicial)} />
-      <Linea etiqueta="Ventas en efectivo" valor={`+ ${pesos(c.ventas_efectivo)}`} tono="suma" />
-      <Linea etiqueta="Gastos en efectivo" valor={`− ${pesos(c.gastos_efectivo)}`} tono="resta" />
-      <Linea etiqueta="Efectivo esperado" valor={pesos(c.efectivo_esperado)} fuerte />
-      <Linea etiqueta="Efectivo contado" valor={pesos(c.efectivo_contado)} />
-      <div className={`cierre-dif ${claseDif}`}>
-        <span>{textoDif}</span>
-        <strong>{pesos(Math.abs(c.diferencia))}</strong>
+      <Linea etiqueta="Base inicial" valor={formatearDinero(c.base_inicial)} />
+      <Linea etiqueta="Ventas en efectivo" valor={`+ ${formatearDinero(c.ventas_efectivo)}`} tono="suma" />
+      <Linea etiqueta="Gastos en efectivo" valor={`− ${formatearDinero(c.gastos_efectivo)}`} tono="resta" />
+      <Linea etiqueta="Efectivo esperado" valor={formatearDinero(c.efectivo_esperado)} fuerte />
+      <Linea etiqueta="Efectivo contado" valor={formatearDinero(c.efectivo_contado)} />
+      <div className={`cierre-dif ${clase}`}>
+        <span>{texto}</span>
+        <strong>{formatearDinero(Math.abs(c.diferencia))}</strong>
       </div>
-      <Linea etiqueta="Ventas por QR Bre-B" valor={pesos(c.ventas_qr)} />
+      <Linea etiqueta="Ventas por QR Bre-B" valor={formatearDinero(c.ventas_qr)} />
       <Linea etiqueta="Pedidos cobrados" valor={String(c.num_pedidos)} />
       {c.nota && <Linea etiqueta="Nota" valor={c.nota} />}
     </Tarjeta>
@@ -76,14 +76,12 @@ export function Cierre() {
       .catch(() => setError('No se pudo cargar el cierre.'));
   }, []);
 
-  if (!preview) return <Cargando pantalla />;
+  if (!preview) return <Cargando />;
 
   const yaCerrado = hecho ?? preview.cierre;
   const esperado = base + preview.ventas_efectivo - preview.gastos_efectivo;
   const diferencia = contado - esperado;
-  const claseDif =
-    diferencia === 0 ? 'cierre-dif--cuadra' : diferencia < 0 ? 'cierre-dif--falta' : 'cierre-dif--sobra';
-  const textoDif = diferencia === 0 ? 'Cuadra' : diferencia < 0 ? 'Faltante' : 'Sobrante';
+  const [claseDif, textoDif] = claseYtexto(diferencia);
 
   async function cerrar() {
     setOcupado(true);
@@ -103,24 +101,16 @@ export function Cierre() {
 
   return (
     <div className="pagina">
-      <header className="pagina__enc">
-        <button className="pagina__volver" onClick={() => navegar('/')} aria-label="Volver">
-          ‹
-        </button>
-        <div className="pagina__titulo">
-          <strong>Cierre de caja</strong>
-          <span>{preview.fecha}</span>
-        </div>
-      </header>
+      <Encabezado titulo="Cierre de caja" subtitulo={preview.fecha} onVolver={() => navegar('/')} />
 
       <div className="pagina__cuerpo">
-        {error && <div className="acceso__error">{error}</div>}
+        {error && <div className="aviso-error">{error}</div>}
 
         {yaCerrado ? (
           <>
             <div className="cierre-banner">La caja de hoy ya fue cerrada.</div>
             <ResumenCierre c={yaCerrado} />
-            <Boton bloque grande onClick={() => navegar('/')}>
+            <Boton flujo bloque onClick={() => navegar('/')}>
               Volver al piso
             </Boton>
           </>
@@ -135,7 +125,7 @@ export function Cierre() {
 
             <Tarjeta className="cierre-card">
               <div className="cierre-linea">
-                <span className="cierre-linea__etiqueta">Base inicial</span>
+                <span className="cierre-linea__etq">Base inicial</span>
                 <input
                   className="cierre-input"
                   inputMode="numeric"
@@ -144,11 +134,11 @@ export function Cierre() {
                   onChange={(e) => setBase(aEnteroDesdeTexto(e.target.value))}
                 />
               </div>
-              <Linea etiqueta="Ventas en efectivo" valor={`+ ${pesos(preview.ventas_efectivo)}`} tono="suma" />
-              <Linea etiqueta="Gastos en efectivo" valor={`− ${pesos(preview.gastos_efectivo)}`} tono="resta" />
-              <Linea etiqueta="Efectivo esperado" valor={pesos(esperado)} fuerte />
+              <Linea etiqueta="Ventas en efectivo" valor={`+ ${formatearDinero(preview.ventas_efectivo)}`} tono="suma" />
+              <Linea etiqueta="Gastos en efectivo" valor={`− ${formatearDinero(preview.gastos_efectivo)}`} tono="resta" />
+              <Linea etiqueta="Efectivo esperado" valor={formatearDinero(esperado)} fuerte />
               <div className="cierre-linea">
-                <span className="cierre-linea__etiqueta">Efectivo contado</span>
+                <span className="cierre-linea__etq">Efectivo contado</span>
                 <input
                   className="cierre-input"
                   inputMode="numeric"
@@ -161,10 +151,10 @@ export function Cierre() {
 
               <div className={`cierre-dif ${claseDif}`}>
                 <span>{textoDif}</span>
-                <strong>{pesos(Math.abs(diferencia))}</strong>
+                <strong>{formatearDinero(Math.abs(diferencia))}</strong>
               </div>
 
-              <Linea etiqueta="Ventas por QR Bre-B" valor={pesos(preview.ventas_qr)} />
+              <Linea etiqueta="Ventas por QR Bre-B" valor={formatearDinero(preview.ventas_qr)} />
               <Linea etiqueta="Pedidos cobrados hoy" valor={String(preview.num_pedidos)} />
             </Tarjeta>
 
@@ -176,7 +166,7 @@ export function Cierre() {
               onChange={(e) => setNota(e.target.value)}
             />
 
-            <Boton bloque grande disabled={ocupado} onClick={cerrar}>
+            <Boton flujo bloque disabled={ocupado} onClick={cerrar}>
               Cerrar caja
             </Boton>
           </>

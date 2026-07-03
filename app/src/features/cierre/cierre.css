@@ -2,97 +2,112 @@
   padding: var(--esp-4);
   display: flex;
   flex-direction: column;
-  gap: var(--esp-2);
 }
 .cierre-linea {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--esp-3);
   padding: var(--esp-3) 0;
-  gap: var(--esp-4);
 }
 .cierre-linea + .cierre-linea {
-  border-top: 1px solid var(--color-borde);
+  border-top: 1px solid var(--linea);
 }
-.cierre-linea__etiqueta {
-  color: var(--color-tinta-suave);
+.cierre-linea__etq {
+  font-family: var(--fuente-ui);
+  font-size: 14px;
+  color: var(--tinta-media);
 }
-.cierre-linea__valor {
-  font-weight: 600;
+.cierre-linea__val {
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--tinta-fuerte);
   white-space: nowrap;
 }
 .cierre-linea--fuerte {
-  border-top: 2px solid var(--color-borde);
+  border-top: 2px solid var(--linea-fuerte);
 }
-.cierre-linea--fuerte .cierre-linea__etiqueta,
-.cierre-linea--fuerte .cierre-linea__valor {
-  color: var(--color-tinta);
+.cierre-linea--fuerte .cierre-linea__etq,
+.cierre-linea--fuerte .cierre-linea__val {
+  color: var(--tinta-fuerte);
   font-weight: 700;
-  font-size: var(--texto-lg);
+  font-size: 17px;
 }
-.cierre-linea__valor--resta {
-  color: var(--color-peligro);
+.cierre-linea__val--suma {
+  color: var(--exito);
 }
-.cierre-linea__valor--suma {
-  color: var(--color-exito);
+.cierre-linea__val--resta {
+  color: var(--pare);
 }
 
-/* Entrada de dinero embebida en una línea */
 .cierre-input {
-  width: 160px;
+  width: 150px;
   text-align: right;
   min-height: 44px;
   padding: 0 var(--esp-3);
-  font-size: var(--texto-md);
-  font-weight: 600;
-  color: var(--color-tinta);
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--tinta-fuerte);
+  background: var(--superficie-2);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-m);
   outline: none;
 }
 .cierre-input:focus {
-  border-color: var(--color-acento);
-  box-shadow: 0 0 0 3px var(--color-acento-suave);
+  border: 2px solid var(--tinta-fuerte);
 }
 
-/* Bloque de diferencia destacado */
 .cierre-dif {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: var(--esp-4);
-  border-radius: var(--radio);
-  margin-top: var(--esp-2);
+  padding: var(--esp-3) var(--esp-4);
+  border-radius: var(--radio-m);
+  margin-top: var(--esp-3);
+  color: var(--tinta-fuerte);
+}
+.cierre-dif span {
+  font-family: var(--fuente-ui);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 14px;
 }
 .cierre-dif strong {
-  font-size: var(--texto-xl);
+  font-family: var(--fuente-display);
+  font-size: 22px;
 }
 .cierre-dif--cuadra {
-  background: var(--color-exito-suave);
-  color: var(--color-exito);
+  border: 2px solid var(--exito);
 }
 .cierre-dif--falta {
-  background: var(--color-peligro-suave);
-  color: var(--color-peligro);
+  border: 2px solid var(--pare);
+  color: var(--pare);
 }
 .cierre-dif--sobra {
-  background: #fef3c7;
-  color: var(--color-aviso);
+  background: var(--coma-tenue);
+  border: 2px solid var(--coma);
+}
+
+.cierre-banner {
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  color: var(--exito);
+  border: 2px solid var(--exito);
+  border-radius: var(--radio-m);
+  padding: var(--esp-3);
+  text-align: center;
 }
 .cierre-aviso {
-  font-size: var(--texto-sm);
-  color: var(--color-aviso);
-  background: #fef3c7;
-  padding: var(--esp-3) var(--esp-4);
-  border-radius: var(--radio);
-}
-.cierre-banner {
-  font-size: var(--texto-sm);
-  color: var(--color-exito);
-  background: var(--color-exito-suave);
-  padding: var(--esp-3) var(--esp-4);
-  border-radius: var(--radio);
-  text-align: center;
-  font-weight: 600;
+  font-family: var(--fuente-ui);
+  font-size: 14px;
+  color: var(--tinta-fuerte);
+  background: var(--coma-tenue);
+  border: 2px solid var(--coma);
+  border-radius: var(--radio-m);
+  padding: var(--esp-3);
 }

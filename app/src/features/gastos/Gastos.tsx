@@ -3,15 +3,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { CategoriaGasto, Gasto, MetodoPago } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
-import { pesos } from '../../lib/dinero.js';
 import { hora } from '../../lib/fechas.js';
 import { aEnteroDesdeTexto } from '../../lib/numeros.js';
 import { ETIQUETA_CATEGORIA_GASTO, etiquetaMetodo } from '../../lib/etiquetas.js';
-import { Boton, Campo, Cargando, Insignia, Tarjeta } from '../../design-system/primitivas/index.js';
-import '../comunes/pagina.css';
+import { Boton, Campo, Chip, Tarjeta, formatearDinero } from '../../design-system/index.js';
+import { Encabezado } from '../comunes/Encabezado.js';
+import { Cargando } from '../comunes/Cargando.js';
 import './gastos.css';
 
 const CATEGORIAS: CategoriaGasto[] = ['insumos', 'servicios', 'nomina', 'otros'];
+const METODOS: MetodoPago[] = ['efectivo', 'qr_breb'];
 
 export function Gastos() {
   const navegar = useNavigate();
@@ -61,22 +62,14 @@ export function Gastos() {
     }
   }
 
-  if (gastos === null) return <Cargando pantalla />;
+  if (gastos === null) return <Cargando />;
 
   return (
     <div className="pagina">
-      <header className="pagina__enc">
-        <button className="pagina__volver" onClick={() => navegar('/')} aria-label="Volver">
-          ‹
-        </button>
-        <div className="pagina__titulo">
-          <strong>Gastos de hoy</strong>
-          <span>Salidas de dinero del día</span>
-        </div>
-      </header>
+      <Encabezado titulo="Gastos de hoy" subtitulo="Salidas de dinero del día" onVolver={() => navegar('/')} />
 
       <div className="pagina__cuerpo">
-        {error && <div className="acceso__error">{error}</div>}
+        {error && <div className="aviso-error">{error}</div>}
 
         <Tarjeta className="gasto-form">
           <Campo
@@ -86,41 +79,33 @@ export function Gastos() {
             placeholder="Ej: Carne y pan"
             onChange={(e) => setConcepto(e.target.value)}
           />
-          <div className="gasto-form__fila">
-            <label className="ds-campo">
-              <span className="ds-campo__etiqueta">Categoría</span>
-              <select
-                className="campo-select"
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value as CategoriaGasto)}
-              >
-                {CATEGORIAS.map((c) => (
-                  <option key={c} value={c}>
-                    {ETIQUETA_CATEGORIA_GASTO[c]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Campo
-              etiqueta="Monto"
-              inputMode="numeric"
-              value={monto === 0 ? '' : String(monto)}
-              placeholder="0"
-              onChange={(e) => setMonto(aEnteroDesdeTexto(e.target.value))}
-            />
+
+          <div className="gasto-grupo">
+            <span className="ds-campo__etiqueta">Categoría</span>
+            <div className="gasto-chips">
+              {CATEGORIAS.map((c) => (
+                <Chip key={c} activo={categoria === c} onClick={() => setCategoria(c)}>
+                  {ETIQUETA_CATEGORIA_GASTO[c]}
+                </Chip>
+              ))}
+            </div>
           </div>
 
-          <div className="ds-campo">
+          <Campo
+            etiqueta="Monto"
+            inputMode="numeric"
+            value={monto === 0 ? '' : String(monto)}
+            placeholder="0"
+            onChange={(e) => setMonto(aEnteroDesdeTexto(e.target.value))}
+          />
+
+          <div className="gasto-grupo">
             <span className="ds-campo__etiqueta">Método</span>
-            <div className="segmentado">
-              {(['efectivo', 'qr_breb'] as MetodoPago[]).map((m) => (
-                <button
-                  key={m}
-                  className={`segmentado__op ${metodo === m ? 'segmentado__op--activo' : ''}`}
-                  onClick={() => setMetodo(m)}
-                >
+            <div className="gasto-chips">
+              {METODOS.map((m) => (
+                <Chip key={m} activo={metodo === m} onClick={() => setMetodo(m)}>
                   {etiquetaMetodo(m)}
-                </button>
+                </Chip>
               ))}
             </div>
           </div>
@@ -132,41 +117,44 @@ export function Gastos() {
             onChange={(e) => setNota(e.target.value)}
           />
 
-          <Boton bloque grande disabled={ocupado || !concepto.trim() || monto <= 0} onClick={registrar}>
+          <Boton flujo bloque disabled={ocupado || !concepto.trim() || monto <= 0} onClick={registrar}>
             Registrar gasto
           </Boton>
         </Tarjeta>
 
         <section>
-          <h2 className="pagina__seccion-titulo">Registrados hoy</h2>
-          <div className="gasto-lista">
-            {gastos.length === 0 ? (
-              <div className="gasto-vacio">Aún no hay gastos hoy.</div>
-            ) : (
-              gastos.map((g) => (
-                <div className="gasto" key={g.id}>
-                  <div className="gasto__info">
-                    <div className="gasto__concepto">{g.concepto}</div>
-                    <div className="gasto__meta">
-                      <Insignia>{ETIQUETA_CATEGORIA_GASTO[g.categoria]}</Insignia>
-                      <span>{etiquetaMetodo(g.metodo)}</span>
-                      <span>· {hora(g.creado_en)}</span>
-                      {g.nota && <span>· {g.nota}</span>}
+          <h2 className="seccion-titulo">Registrados hoy</h2>
+          {gastos.length === 0 ? (
+            <p className="vacio">
+              <strong>Caja quieta.</strong>
+              Aún no hay gastos hoy.
+            </p>
+          ) : (
+            <>
+              <div className="gasto-lista">
+                {gastos.map((g) => (
+                  <div className="gasto" key={g.id}>
+                    <div className="gasto__info">
+                      <div className="gasto__concepto">{g.concepto}</div>
+                      <div className="gasto__meta">
+                        <span className="gasto__cat">{ETIQUETA_CATEGORIA_GASTO[g.categoria]}</span>
+                        <span>{etiquetaMetodo(g.metodo)}</span>
+                        <span className="dinero">· {hora(g.creado_en)}</span>
+                        {g.nota && <span>· {g.nota}</span>}
+                      </div>
                     </div>
+                    <div className="gasto__monto">{formatearDinero(g.monto)}</div>
                   </div>
-                  <div className="gasto__monto">{pesos(g.monto)}</div>
-                </div>
-              ))
-            )}
-          </div>
-          {gastos.length > 0 && (
-            <div className="gasto-total">
-              <span>Total del día</span>
-              <strong>
-                {pesos(totalEfectivo)} efectivo
-                {totalQr > 0 && ` · ${pesos(totalQr)} QR`}
-              </strong>
-            </div>
+                ))}
+              </div>
+              <div className="gasto-total">
+                <span className="gasto-total__etq">Total del día</span>
+                <span className="gasto-total__val">
+                  {formatearDinero(totalEfectivo)} efectivo
+                  {totalQr > 0 && ` · ${formatearDinero(totalQr)} QR`}
+                </span>
+              </div>
+            </>
           )}
         </section>
       </div>

@@ -1,14 +1,21 @@
-// Tomar pedido: menú a la izquierda, cuenta a la derecha.
-// Meseros solo AGREGAN (tocando productos). Quitar/ajustar cantidad y cancelar
-// son acciones de admin (se ven solo para admin y el servidor las refuerza).
+// Tomar pedido: menú (TarjetaProducto) + cuenta (LineaPedido + DisplayTotal).
+// Tocar un producto agrega 1 (mesero y admin). El botón − de cada línea baja/
+// quita y SOLO lo ve el admin (el servidor lo refuerza). Cobrar/cancelar: admin.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { PedidoConItems } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
 import { useStore } from '../../estado/store.js';
-import { pesos } from '../../lib/dinero.js';
 import { turnoBarra } from '../../lib/etiquetas.js';
-import { Boton, Cargando } from '../../design-system/primitivas/index.js';
+import {
+  Boton,
+  DisplayTotal,
+  LineaPedido,
+  TarjetaProducto,
+  formatearDinero
+} from '../../design-system/index.js';
+import { Encabezado } from '../comunes/Encabezado.js';
+import { Cargando } from '../comunes/Cargando.js';
 import { CobroModal } from '../cobro/CobroModal.js';
 import './pedido.css';
 
@@ -33,7 +40,6 @@ export function TomarPedido() {
   const [error, setError] = useState('');
   const [cobrando, setCobrando] = useState(false);
 
-  // Asegura menú y pedido cargados si se entró directo por URL.
   useEffect(() => {
     if (menu.length === 0) cargarMenu().catch(() => {});
   }, [menu.length, cargarMenu]);
@@ -52,11 +58,9 @@ export function TomarPedido() {
     return () => {
       vivo = false;
     };
-    // Solo al montar / cambiar de id.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedidoId]);
 
-  // Mapa producto_id -> cantidad en la cuenta, para el badge del menú.
   const cantidadPorProducto = useMemo(() => {
     const m = new Map<number, number>();
     for (const it of pedido?.items ?? []) m.set(it.producto_id, it.cantidad);
@@ -71,16 +75,16 @@ export function TomarPedido() {
     }
   }
 
-  if (buscando) return <Cargando pantalla />;
+  if (buscando) return <Cargando />;
 
   // El pedido ya no está abierto (cobrado/cancelado por otro dispositivo).
   if (!pedido) {
     return (
-      <div className="pedido">
-        <div className="pedido__cargando pila" style={{ gap: 'var(--esp-4)' }}>
-          <p>Este pedido ya no está abierto.</p>
-          <Boton onClick={() => navegar('/')}>Volver al piso</Boton>
-        </div>
+      <div className="pedido__salida">
+        <strong>Ese pedido ya cerró.</strong>
+        <Boton flujo onClick={() => navegar('/')}>
+          Volver al piso
+        </Boton>
       </div>
     );
   }
@@ -91,44 +95,33 @@ export function TomarPedido() {
 
   return (
     <div className="pedido">
-      <header className="pedido__enc">
-        <button className="pedido__volver" onClick={() => navegar('/')} aria-label="Volver">
-          ‹
-        </button>
-        <div className="pedido__titulo">
-          <strong>{titulo}</strong>
-          <span>{subtitulo}</span>
-        </div>
-        <div className="pedido__enc-total">
-          <span>Total</span>
-          <strong>{pesos(total)}</strong>
-        </div>
-      </header>
+      <Encabezado
+        titulo={titulo}
+        subtitulo={subtitulo}
+        onVolver={() => navegar('/')}
+        acciones={<span className="pedido__total-enc">{formatearDinero(total)}</span>}
+      />
 
       <div className="pedido__cols">
         {/* Menú */}
-        <div className="menu">
-          {error && <div className="acceso__error" style={{ marginBottom: 'var(--esp-3)' }}>{error}</div>}
+        <div className="pedido__menu">
+          {error && <div className="aviso-error">{error}</div>}
           {menu.map((cat) => (
-            <section className="menu__cat" key={cat.id}>
-              <h3 className="menu__cat-titulo">{cat.nombre}</h3>
-              <div className="menu__grid">
+            <section key={cat.id}>
+              <h3 className="seccion-titulo">{cat.nombre}</h3>
+              <div className="pedido__cat-grid">
                 {cat.productos.map((prod) => {
-                  const cant = cantidadPorProducto.get(prod.id);
-                  const sinStock = prod.controla_stock && prod.stock <= 0;
+                  const controla = prod.controla_stock;
                   return (
-                    <button
+                    <TarjetaProducto
                       key={prod.id}
-                      className="producto"
-                      disabled={sinStock}
-                      onClick={() => conManejo(() => agregarItem(p.id, prod.id))}
-                    >
-                      {cant ? <span className="producto__cantidad">{cant}</span> : null}
-                      <span className="producto__nombre">{prod.nombre}</span>
-                      <span className="producto__precio">
-                        {sinStock ? 'Agotado' : pesos(prod.precio)}
-                      </span>
-                    </button>
+                      nombre={prod.nombre}
+                      precio={prod.precio}
+                      cantidad={cantidadPorProducto.get(prod.id) ?? 0}
+                      stock={controla ? prod.stock : undefined}
+                      agotado={controla && prod.stock <= 0}
+                      onAgregar={() => conManejo(() => agregarItem(p.id, prod.id))}
+                    />
                   );
                 })}
               </div>
@@ -137,63 +130,41 @@ export function TomarPedido() {
         </div>
 
         {/* Cuenta */}
-        <aside className="cuenta">
-          <div className="cuenta__lista">
+        <aside className="pedido__cuenta">
+          <div className="pedido__lista">
             {items.length === 0 ? (
-              <div className="cuenta__vacia">
-                Toca productos del menú para agregarlos al pedido.
-              </div>
+              <p className="vacio">
+                <strong>Cuenta vacía.</strong>
+                Toca el menú para ir sumando.
+              </p>
             ) : (
               items.map((it) => (
-                <div className="item" key={it.id}>
-                  <div className="item__info">
-                    <div className="item__nombre">{it.nombre_producto}</div>
-                    <div className="item__sub">
-                      {pesos(it.precio_unitario)} · {pesos(it.precio_unitario * it.cantidad)}
-                    </div>
-                  </div>
-
-                  {esAdmin ? (
-                    <>
-                      <button
-                        className="paso"
-                        aria-label="Menos"
-                        onClick={() =>
+                <LineaPedido
+                  key={it.id}
+                  cantidad={it.cantidad}
+                  nombre={it.nombre_producto}
+                  subtotal={it.precio_unitario * it.cantidad}
+                  onQuitar={
+                    esAdmin
+                      ? () =>
                           conManejo(() =>
                             it.cantidad <= 1
                               ? quitarItem(p.id, it.id)
                               : cambiarCantidad(p.id, it.id, it.cantidad - 1)
                           )
-                        }
-                      >
-                        −
-                      </button>
-                      <span className="item__cant">{it.cantidad}</span>
-                      <button
-                        className="paso"
-                        aria-label="Más"
-                        onClick={() => conManejo(() => cambiarCantidad(p.id, it.id, it.cantidad + 1))}
-                      >
-                        +
-                      </button>
-                    </>
-                  ) : (
-                    <span className="item__cant">×{it.cantidad}</span>
-                  )}
-                </div>
+                      : undefined
+                  }
+                />
               ))
             )}
           </div>
 
-          <div className="cuenta__pie">
-            <div className="cuenta__total">
-              <span>Total</span>
-              <strong>{pesos(total)}</strong>
-            </div>
+          <div className="pedido__pie">
+            <DisplayTotal monto={total} />
             {esAdmin && (
               <>
-                <Boton bloque grande disabled={total <= 0} onClick={() => setCobrando(true)}>
-                  Cobrar {pesos(total)}
+                <Boton flujo bloque disabled={total <= 0} onClick={() => setCobrando(true)}>
+                  Cobrar {formatearDinero(total)}
                 </Boton>
                 <Boton
                   variante="peligro"

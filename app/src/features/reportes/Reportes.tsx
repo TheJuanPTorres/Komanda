@@ -1,13 +1,13 @@
-// Reportes (solo admin): margen por producto y ventas por día/hora.
+// Reportes (solo admin): margen por producto, ventas por día/hora y conciliación.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReporteConciliacion, ReporteMargen, ReporteVentas } from '@pos/shared';
 import { api } from '../../lib/api.js';
-import { pesos } from '../../lib/dinero.js';
 import { hora } from '../../lib/fechas.js';
 import { hoyBogota, restarDias } from '../../lib/periodos.js';
-import { Cargando, Tarjeta } from '../../design-system/primitivas/index.js';
-import '../comunes/pagina.css';
+import { Chip, Tarjeta, formatearDinero } from '../../design-system/index.js';
+import { Encabezado } from '../comunes/Encabezado.js';
+import { Cargando } from '../comunes/Cargando.js';
 import './reportes.css';
 
 type Preset = 'hoy' | '7' | '30' | 'custom';
@@ -28,7 +28,7 @@ export function Reportes() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  function aplicarPreset(p: Preset) {
+  function aplicarPreset(p: Exclude<Preset, 'custom'>) {
     setPreset(p);
     if (p === 'hoy') {
       setDesde(hoy);
@@ -36,7 +36,7 @@ export function Reportes() {
     } else if (p === '7') {
       setDesde(restarDias(hoy, 6));
       setHasta(hoy);
-    } else if (p === '30') {
+    } else {
       setDesde(restarDias(hoy, 29));
       setHasta(hoy);
     }
@@ -61,26 +61,12 @@ export function Reportes() {
       .finally(() => setCargando(false));
   }, [desde, hasta]);
 
-  const maxDia = useMemo(
-    () => Math.max(1, ...(ventas?.por_dia.map((d) => d.total) ?? [0])),
-    [ventas]
-  );
-  const maxHora = useMemo(
-    () => Math.max(1, ...(ventas?.por_hora.map((h) => h.total) ?? [0])),
-    [ventas]
-  );
+  const maxDia = useMemo(() => Math.max(1, ...(ventas?.por_dia.map((d) => d.total) ?? [0])), [ventas]);
+  const maxHora = useMemo(() => Math.max(1, ...(ventas?.por_hora.map((h) => h.total) ?? [0])), [ventas]);
 
   return (
     <div className="pagina">
-      <header className="pagina__enc">
-        <button className="pagina__volver" onClick={() => navegar('/')} aria-label="Volver">
-          ‹
-        </button>
-        <div className="pagina__titulo">
-          <strong>Reportes</strong>
-          <span>Margen y ventas</span>
-        </div>
-      </header>
+      <Encabezado titulo="Reportes" subtitulo="Margen, ventas y conciliación" onVolver={() => navegar('/')} />
 
       <div className="pagina__cuerpo">
         <div className="rep-periodo">
@@ -90,15 +76,11 @@ export function Reportes() {
                 ['hoy', 'Hoy'],
                 ['7', '7 días'],
                 ['30', '30 días']
-              ] as [Preset, string][]
+              ] as [Exclude<Preset, 'custom'>, string][]
             ).map(([p, etiqueta]) => (
-              <button
-                key={p}
-                className={`rep-preset ${preset === p ? 'rep-preset--activo' : ''}`}
-                onClick={() => aplicarPreset(p)}
-              >
+              <Chip key={p} activo={preset === p} onClick={() => aplicarPreset(p)}>
                 {etiqueta}
-              </button>
+              </Chip>
             ))}
           </div>
           <div className="rep-fechas">
@@ -127,27 +109,24 @@ export function Reportes() {
         </div>
 
         <div className="rep-tabs">
-          <button
-            className={`rep-tab ${pestana === 'margen' ? 'rep-tab--activa' : ''}`}
-            onClick={() => setPestana('margen')}
-          >
-            Margen por producto
-          </button>
-          <button
-            className={`rep-tab ${pestana === 'ventas' ? 'rep-tab--activa' : ''}`}
-            onClick={() => setPestana('ventas')}
-          >
-            Ventas
-          </button>
-          <button
-            className={`rep-tab ${pestana === 'conciliacion' ? 'rep-tab--activa' : ''}`}
-            onClick={() => setPestana('conciliacion')}
-          >
-            Conciliación
-          </button>
+          {(
+            [
+              ['margen', 'Margen'],
+              ['ventas', 'Ventas'],
+              ['conciliacion', 'Conciliación']
+            ] as [Pestana, string][]
+          ).map(([p, etiqueta]) => (
+            <button
+              key={p}
+              className={`rep-tab ${pestana === p ? 'rep-tab--activa' : ''}`}
+              onClick={() => setPestana(p)}
+            >
+              {etiqueta}
+            </button>
+          ))}
         </div>
 
-        {error && <div className="acceso__error">{error}</div>}
+        {error && <div className="aviso-error">{error}</div>}
 
         {cargando ? (
           <Cargando />
@@ -186,9 +165,9 @@ function TablaMargen({ margen }: { margen: ReporteMargen | null }) {
             <tr key={p.producto_id}>
               <td className="rep-tabla__nombre">{p.nombre}</td>
               <td>{p.unidades}</td>
-              <td>{pesos(p.ingresos)}</td>
-              <td>{pesos(p.costo)}</td>
-              <td className="rep-tabla__margen">{pesos(p.margen)}</td>
+              <td>{formatearDinero(p.ingresos)}</td>
+              <td>{formatearDinero(p.costo)}</td>
+              <td>{formatearDinero(p.margen)}</td>
               <td>{p.margen_pct}%</td>
             </tr>
           ))}
@@ -197,9 +176,9 @@ function TablaMargen({ margen }: { margen: ReporteMargen | null }) {
           <tr>
             <td>Total</td>
             <td>{t.unidades}</td>
-            <td>{pesos(t.ingresos)}</td>
-            <td>{pesos(t.costo)}</td>
-            <td>{pesos(t.margen)}</td>
+            <td>{formatearDinero(t.ingresos)}</td>
+            <td>{formatearDinero(t.costo)}</td>
+            <td>{formatearDinero(t.margen)}</td>
             <td>{t.margen_pct}%</td>
           </tr>
         </tfoot>
@@ -228,15 +207,15 @@ function SeccionVentas({
       <div className="rep-totales">
         <Tarjeta className="rep-total">
           <span>Total vendido</span>
-          <strong>{pesos(t.total)}</strong>
+          <strong>{formatearDinero(t.total)}</strong>
         </Tarjeta>
         <Tarjeta className="rep-total">
           <span>Efectivo</span>
-          <strong>{pesos(t.efectivo)}</strong>
+          <strong>{formatearDinero(t.efectivo)}</strong>
         </Tarjeta>
         <Tarjeta className="rep-total">
           <span>QR Bre-B</span>
-          <strong>{pesos(t.qr)}</strong>
+          <strong>{formatearDinero(t.qr)}</strong>
         </Tarjeta>
         <Tarjeta className="rep-total">
           <span>Pedidos</span>
@@ -244,12 +223,12 @@ function SeccionVentas({
         </Tarjeta>
         <Tarjeta className="rep-total">
           <span>Ticket promedio</span>
-          <strong>{pesos(t.ticket_promedio)}</strong>
+          <strong>{formatearDinero(t.ticket_promedio)}</strong>
         </Tarjeta>
       </div>
 
       <section className="rep-seccion">
-        <h2 className="pagina__seccion-titulo">Ventas por día</h2>
+        <h2 className="seccion-titulo">Ventas por día</h2>
         <div className="rep-dias">
           {ventas.por_dia.map((d) => (
             <div className="rep-dia" key={d.fecha}>
@@ -257,19 +236,19 @@ function SeccionVentas({
               <div className="rep-dia__barra-fondo">
                 <div className="rep-dia__barra" style={{ width: `${(d.total / maxDia) * 100}%` }} />
               </div>
-              <span className="rep-dia__valor">{pesos(d.total)}</span>
+              <span className="rep-dia__valor">{formatearDinero(d.total)}</span>
             </div>
           ))}
         </div>
       </section>
 
       <section className="rep-seccion">
-        <h2 className="pagina__seccion-titulo">
+        <h2 className="seccion-titulo">
           Ventas por hora {horaPico.total > 0 && `· pico ${horaPico.hora}:00`}
         </h2>
         <div className="rep-horas">
           {ventas.por_hora.map((h) => (
-            <div className="rep-hora" key={h.hora} title={`${h.hora}:00 · ${pesos(h.total)}`}>
+            <div className="rep-hora" key={h.hora} title={`${h.hora}:00 · ${formatearDinero(h.total)}`}>
               <div
                 className={`rep-hora__barra ${h.hora === horaPico.hora && h.total > 0 ? 'rep-hora__barra--pico' : ''}`}
                 style={{ height: `${(h.total / maxHora) * 100}%` }}
@@ -292,8 +271,7 @@ function SeccionVentas({
 function SeccionConciliacion({ conciliacion }: { conciliacion: ReporteConciliacion | null }) {
   if (!conciliacion) return <div className="rep-vacio">Sin datos.</div>;
   const { resumen, sin_pago, pagos_sin_conciliar } = conciliacion;
-  const todoCuadra =
-    resumen.pagos_qr > 0 && sin_pago.length === 0 && pagos_sin_conciliar.length === 0;
+  const todoCuadra = resumen.pagos_qr > 0 && sin_pago.length === 0 && pagos_sin_conciliar.length === 0;
 
   return (
     <>
@@ -303,7 +281,7 @@ function SeccionConciliacion({ conciliacion }: { conciliacion: ReporteConciliaci
           <strong>{resumen.pagos_qr}</strong>
         </Tarjeta>
         <Tarjeta className="rep-total">
-          <span>Con correo del banco</span>
+          <span>Con correo</span>
           <strong>{resumen.conciliados}</strong>
         </Tarjeta>
         <Tarjeta className="rep-total">
@@ -318,14 +296,14 @@ function SeccionConciliacion({ conciliacion }: { conciliacion: ReporteConciliaci
 
       <p className="rep-nota">
         La conciliación la alimenta el lector de correos (proceso aparte). Si no está configurado,
-        estas listas mostrarán todos los pagos QR como "sin correo".
+        estas listas mostrarán todos los pagos QR como “sin correo”.
       </p>
 
-      {todoCuadra && <div className="cierre-banner">Todo cuadra: cada pago QR tiene su correo.</div>}
+      {todoCuadra && <div className="rep-banner">Todo cuadra: cada pago QR tiene su correo.</div>}
 
       {pagos_sin_conciliar.length > 0 && (
         <section className="rep-seccion">
-          <h2 className="pagina__seccion-titulo">Pagos QR sin correo del banco</h2>
+          <h2 className="seccion-titulo">Pagos QR sin correo del banco</h2>
           <Tarjeta className="rep-tabla-cont">
             <table className="rep-tabla">
               <thead>
@@ -340,7 +318,7 @@ function SeccionConciliacion({ conciliacion }: { conciliacion: ReporteConciliaci
                 {pagos_sin_conciliar.map((p) => (
                   <tr key={p.pago_id}>
                     <td className="rep-tabla__nombre">#{p.pedido_id}</td>
-                    <td>{pesos(p.monto)}</td>
+                    <td>{formatearDinero(p.monto)}</td>
                     <td>{p.referencia_externa ?? '—'}</td>
                     <td>{hora(p.creado_en)}</td>
                   </tr>
@@ -353,7 +331,7 @@ function SeccionConciliacion({ conciliacion }: { conciliacion: ReporteConciliaci
 
       {sin_pago.length > 0 && (
         <section className="rep-seccion">
-          <h2 className="pagina__seccion-titulo">Correos del banco sin pago registrado</h2>
+          <h2 className="seccion-titulo">Correos del banco sin pago registrado</h2>
           <Tarjeta className="rep-tabla-cont">
             <table className="rep-tabla">
               <thead>
@@ -368,7 +346,7 @@ function SeccionConciliacion({ conciliacion }: { conciliacion: ReporteConciliaci
                 {sin_pago.map((n) => (
                   <tr key={n.id}>
                     <td className="rep-tabla__nombre">{n.asunto || n.remitente || '—'}</td>
-                    <td>{n.monto !== null ? pesos(n.monto) : '—'}</td>
+                    <td>{n.monto !== null ? formatearDinero(n.monto) : '—'}</td>
                     <td>{n.referencia ?? '—'}</td>
                     <td>{hora(n.creado_en)}</td>
                   </tr>

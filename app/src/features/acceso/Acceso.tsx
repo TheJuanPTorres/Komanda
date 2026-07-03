@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import type { Usuario } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
 import { useStore } from '../../estado/store.js';
-import { Boton, Cargando, Tarjeta } from '../../design-system/primitivas/index.js';
+import { Boton, Tarjeta, TecladoPin } from '../../design-system/index.js';
+import { Cargando } from '../comunes/Cargando.js';
+import logo from '../../design-system/logo.svg';
 import './acceso.css';
 
 export function Acceso() {
@@ -38,6 +40,7 @@ export function Acceso() {
   }
 
   async function accederAdmin() {
+    if (pin.length < 4) return;
     setError('');
     setOcupado(true);
     try {
@@ -50,47 +53,42 @@ export function Acceso() {
     }
   }
 
-  function teclaPin(t: string) {
-    setError('');
-    if (t === 'borrar') {
-      setPin((p) => p.slice(0, -1));
-    } else if (pin.length < 6) {
-      setPin((p) => p + t);
-    }
-  }
-
-  if (meseros === null) return <Cargando pantalla />;
+  if (meseros === null) return <Cargando />;
 
   return (
     <div className="acceso">
       <Tarjeta className="acceso__tarjeta">
         <div className="acceso__marca">
-          <h1>Punto de venta</h1>
+          <img className="acceso__logo" src={logo} alt="PARE Y COMA" />
+          <h1>Pare y Coma</h1>
           <p>Toca tu nombre para empezar</p>
         </div>
 
-        {error && <div className="acceso__error">{error}</div>}
+        {error && <div className="aviso-error">{error}</div>}
 
         {!modoAdmin ? (
           <>
             <div>
-              <div className="acceso__seccion-titulo">Meseros</div>
+              <div className="acceso__seccion">Meseros</div>
               <div className="acceso__meseros">
                 {meseros.map((m) => (
                   <Boton
                     key={m.id}
                     variante="secundario"
-                    grande
+                    flujo
                     disabled={ocupado}
                     onClick={() => accederMesero(m.id)}
                   >
                     {m.nombre}
                   </Boton>
                 ))}
-                {meseros.length === 0 && (
-                  <p style={{ color: 'var(--color-tinta-suave)' }}>No hay meseros registrados.</p>
-                )}
               </div>
+              {meseros.length === 0 && (
+                <p className="vacio">
+                  <strong>Nadie en turno.</strong>
+                  Registra los meseros para empezar.
+                </p>
+              )}
             </div>
 
             <div className="acceso__separador">o</div>
@@ -101,37 +99,20 @@ export function Acceso() {
           </>
         ) : (
           <>
-            <div className="acceso__seccion-titulo">PIN de administrador</div>
-            <div className="pin__puntos">
-              {Array.from({ length: Math.max(4, pin.length) }).map((_, i) => (
-                <span key={i} className={`pin__punto ${i < pin.length ? 'pin__punto--lleno' : ''}`} />
-              ))}
-            </div>
-            <div className="pin__teclado">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((t) => (
-                <button key={t} className="pin__tecla" onClick={() => teclaPin(t)}>
-                  {t}
-                </button>
-              ))}
-              <button className="pin__tecla" onClick={() => teclaPin('borrar')} aria-label="Borrar">
-                ⌫
-              </button>
-              <button className="pin__tecla" onClick={() => teclaPin('0')}>
-                0
-              </button>
-              <button
-                className="pin__tecla"
-                onClick={accederAdmin}
-                disabled={pin.length < 4 || ocupado}
-                aria-label="Entrar"
-                style={{ color: 'var(--color-acento)' }}
-              >
-                ✓
-              </button>
-            </div>
+            <div className="acceso__seccion">PIN de administrador</div>
+            <TecladoPin
+              valor={pin}
+              longitud={4}
+              onCambio={(v) => {
+                setError('');
+                setPin(v);
+              }}
+              onEnter={accederAdmin}
+            />
             <Boton
               variante="fantasma"
               bloque
+              disabled={ocupado}
               onClick={() => {
                 setModoAdmin(false);
                 setPin('');

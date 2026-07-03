@@ -1,0 +1,124 @@
+/* Estructura común de pantallas, compuesta SOLO con tokens del sistema. */
+
+.pagina {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.pagina__cuerpo {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: var(--esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+/* Encabezado (placa superior) */
+.enc {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--superficie-1);
+  border-bottom: 2px solid var(--linea-fuerte);
+}
+.enc__volver {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--tinta-fuerte);
+  border-radius: var(--radio-m);
+}
+.enc__volver:active {
+  transform: scale(0.96);
+  background: rgba(21, 17, 10, 0.06);
+}
+.enc__titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.enc__titulo strong {
+  font-family: var(--fuente-ui);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 18px;
+  color: var(--tinta-fuerte);
+}
+.enc__titulo span {
+  font-family: var(--fuente-ui);
+  font-size: 13px;
+  color: var(--tinta-media);
+}
+.enc__acciones {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+/* Título de sección (una línea, en display) */
+.seccion-titulo {
+  font-family: var(--fuente-display);
+  font-size: 15px;
+  color: var(--tinta-fuerte);
+  margin: 0 0 var(--esp-3);
+}
+
+/* Aviso de error (para formularios y acciones) */
+.aviso-error {
+  font-family: var(--fuente-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--pare);
+  border: 2px solid var(--pare);
+  border-radius: var(--radio-m);
+  padding: var(--esp-2) var(--esp-3);
+  background: transparent;
+}
+
+/* Estado vacío con carácter */
+.vacio {
+  text-align: center;
+  color: var(--tinta-media);
+  padding: var(--esp-6) var(--esp-3);
+  font-family: var(--fuente-ui);
+  font-size: 14px;
+}
+.vacio strong {
+  display: block;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--tinta-fuerte);
+  font-size: 15px;
+  margin-bottom: var(--esp-1);
+}
+
+/* Pantalla de carga (nunca spinner) */
+.carga {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--esp-4);
+  padding: var(--esp-4);
+}
+.carga__logo {
+  width: 88px;
+  height: 88px;
+  animation: ds-pulso 1.4s ease-in-out infinite;
+}

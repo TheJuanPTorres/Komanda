@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useStore } from './estado/store.js';
 import { iniciarTiempoReal } from './estado/tiempoReal.js';
 import { Rutas } from './rutas.js';
-import { Cargando } from './design-system/primitivas/index.js';
+import { Cargando } from './features/comunes/Cargando.js';
 import { ActualizacionPWA } from './pwa/ActualizacionPWA.js';
 
 export function App() {
@@ -16,7 +16,7 @@ export function App() {
     cargarSesion();
   }, [cargarSesion]);
 
-  if (cargandoSesion) return <Cargando pantalla />;
+  if (cargandoSesion) return <Cargando />;
   return (
     <>
       <Rutas />

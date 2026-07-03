@@ -9,6 +9,7 @@ import { TomarPedido } from './features/pedido/TomarPedido.js';
 import { Gastos } from './features/gastos/Gastos.js';
 import { Cierre } from './features/cierre/Cierre.js';
 import { Reportes } from './features/reportes/Reportes.js';
+import { Muestra } from './muestra/Muestra.js';
 
 function Protegida({ children, soloAdmin }: { children: ReactNode; soloAdmin?: boolean }) {
   const sesion = useStore((s) => s.sesion);
@@ -64,6 +65,8 @@ export function Rutas() {
             </Protegida>
           }
         />
+        {/* Storybook del sistema de diseño, solo en desarrollo. */}
+        {import.meta.env.DEV && <Route path="/muestra" element={<Muestra />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
