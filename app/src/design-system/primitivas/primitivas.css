@@ -1,141 +1,260 @@
-/* Estilos de las primitivas del sistema de diseño. */
+/* Primitivas del sistema PARE Y COMA. Estiladas SOLO con tokens. */
 
 /* ── Botón ─────────────────────────────────────────────────────────────── */
 .ds-boton {
   appearance: none;
-  border: 1px solid transparent;
-  border-radius: var(--radio);
-  font-size: var(--texto-md);
-  font-weight: 600;
-  min-height: var(--toque);
-  padding: 0 var(--esp-5);
+  border: 2px solid transparent;
+  border-radius: var(--radio-m);
+  font-family: var(--fuente-ui);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 15px;
+  min-height: var(--target-min);
+  padding: 0 var(--esp-4);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--esp-2);
   cursor: pointer;
-  transition: transform 0.04s ease, background 0.15s ease, border-color 0.15s ease;
   user-select: none;
+  transition:
+    transform var(--dur-rapida) var(--curva),
+    background-color var(--dur-rapida) var(--curva),
+    border-color var(--dur-rapida) var(--curva);
 }
-.ds-boton:active:not(:disabled) {
-  transform: translateY(1px) scale(0.99);
-}
-.ds-boton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* Acciones de flujo: más altas (target crítico) */
+.ds-boton--flujo {
+  min-height: var(--target-critico);
+  font-size: 16px;
 }
 .ds-boton--bloque {
   width: 100%;
 }
-.ds-boton--grande {
-  min-height: 60px;
-  font-size: var(--texto-lg);
+.ds-boton:active,
+.ds-boton[data-demo='presionado'] {
+  transform: scale(0.98);
+}
+.ds-boton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
 }
 
+/* Primario: el rojo PARE. La ÚNICA acción sólida en rojo. */
 .ds-boton--primario {
-  background: var(--color-acento);
-  color: var(--color-sobre-acento);
+  background: var(--pare);
+  color: var(--tinta-sobre-nocturno);
 }
-.ds-boton--primario:hover:not(:disabled) {
-  background: var(--color-acento-fuerte);
+.ds-boton--primario:active,
+.ds-boton--primario[data-demo='presionado'] {
+  background: var(--pare-presionado);
 }
+
+/* Secundario */
 .ds-boton--secundario {
-  background: var(--color-superficie);
-  color: var(--color-tinta);
-  border-color: var(--color-borde);
+  background: var(--superficie-2);
+  color: var(--tinta-fuerte);
+  border-color: var(--linea);
 }
-.ds-boton--secundario:hover:not(:disabled) {
-  background: var(--color-superficie-2);
+.ds-boton--secundario:active,
+.ds-boton--secundario[data-demo='presionado'] {
+  border-color: var(--linea-fuerte);
 }
+
+/* Peligro: NUNCA rojo sólido. Outline rojo + texto rojo. */
+.ds-boton--peligro {
+  background: transparent;
+  color: var(--pare);
+  border-color: var(--pare);
+}
+.ds-boton--peligro:active,
+.ds-boton--peligro[data-demo='presionado'] {
+  background: rgba(190, 32, 38, 0.08);
+}
+
+/* Fantasma */
 .ds-boton--fantasma {
   background: transparent;
-  color: var(--color-tinta-suave);
+  color: var(--tinta-media);
+  border-color: transparent;
 }
-.ds-boton--fantasma:hover:not(:disabled) {
-  background: rgba(28, 25, 23, 0.05);
-}
-.ds-boton--peligro {
-  background: var(--color-peligro-suave);
-  color: var(--color-peligro);
-}
-.ds-boton--peligro:hover:not(:disabled) {
-  background: #fbcaca;
+.ds-boton--fantasma:active,
+.ds-boton--fantasma[data-demo='presionado'] {
+  background: rgba(21, 17, 10, 0.06);
 }
 
-/* ── Tarjeta ───────────────────────────────────────────────────────────── */
-.ds-tarjeta {
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-lg);
-  box-shadow: var(--sombra-1);
+/* ── Chip ──────────────────────────────────────────────────────────────── */
+.ds-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-height: 44px;
+  padding: 0 var(--esp-3);
+  border-radius: var(--radio-pill);
+  background: var(--superficie-1);
+  border: 1px solid var(--linea);
+  color: var(--tinta-fuerte);
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) var(--curva);
+}
+.ds-chip--activo {
+  background: var(--coma);
+  color: var(--tinta-fuerte);
+  border: 2px solid var(--linea-fuerte);
+}
+.ds-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-/* ── Campo (input) ─────────────────────────────────────────────────────── */
+/* ── Campo ─────────────────────────────────────────────────────────────── */
 .ds-campo {
   display: flex;
   flex-direction: column;
   gap: var(--esp-2);
 }
 .ds-campo__etiqueta {
-  font-size: var(--texto-sm);
-  font-weight: 600;
-  color: var(--color-tinta-suave);
+  font-family: var(--fuente-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--tinta-media);
 }
 .ds-campo__control {
-  min-height: var(--toque);
-  padding: 0 var(--esp-4);
-  font-size: var(--texto-md);
-  color: var(--color-tinta);
-  background: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio);
+  min-height: var(--target-min);
+  padding: 0 var(--esp-3);
+  background: var(--superficie-2);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-m);
+  color: var(--tinta-fuerte);
+  font-family: var(--fuente-ui);
+  font-size: 16px;
   outline: none;
 }
+.ds-campo__control::placeholder {
+  /* tinta-media (no tinta-suave): el placeholder es texto y debe pasar AA */
+  color: var(--tinta-media);
+  opacity: 1;
+}
 .ds-campo__control:focus {
-  border-color: var(--color-acento);
-  box-shadow: 0 0 0 3px var(--color-acento-suave);
+  border: 2px solid var(--tinta-fuerte);
+}
+.ds-campo--error .ds-campo__control {
+  border: 2px solid var(--pare);
+}
+.ds-campo__error {
+  font-family: var(--fuente-ui);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--pare);
 }
 
-/* ── Insignia ──────────────────────────────────────────────────────────── */
-.ds-insignia {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--esp-1);
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  padding: 2px var(--esp-2);
-  border-radius: var(--radio-full);
-  background: var(--color-superficie-2);
-  color: var(--color-tinta-suave);
-  border: 1px solid var(--color-borde);
+/* ── Tarjeta ───────────────────────────────────────────────────────────── */
+.ds-tarjeta {
+  background: var(--superficie-1);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-l);
 }
-.ds-insignia--acento {
-  background: var(--color-acento-suave);
-  color: var(--color-acento-fuerte);
-  border-color: transparent;
-}
-.ds-insignia--exito {
-  background: var(--color-exito-suave);
-  color: var(--color-exito);
-  border-color: transparent;
+.ds-tarjeta--elevada {
+  box-shadow: var(--sombra-elevada);
 }
 
-/* ── Cargando ──────────────────────────────────────────────────────────── */
-.ds-cargando {
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--color-borde);
-  border-top-color: var(--color-acento);
-  border-radius: 50%;
-  animation: ds-girar 0.8s linear infinite;
-}
-.ds-cargando--pantalla {
-  min-height: 100dvh;
+/* ── Modal ─────────────────────────────────────────────────────────────── */
+.ds-modal__fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(21, 17, 10, 0.4);
   display: grid;
   place-items: center;
+  padding: var(--esp-3);
+  z-index: 50;
 }
-@keyframes ds-girar {
-  to {
-    transform: rotate(360deg);
+.ds-modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--superficie-2);
+  border-radius: var(--radio-l);
+  box-shadow: var(--sombra-elevada);
+  padding: var(--esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+.ds-modal__titulo {
+  margin: 0;
+  font-family: var(--fuente-ui);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 20px;
+  color: var(--tinta-fuerte);
+}
+.ds-modal__consecuencia {
+  margin: 0;
+  font-family: var(--fuente-ui);
+  color: var(--tinta-media);
+  font-size: 15px;
+}
+.ds-modal__acciones {
+  display: flex;
+  gap: var(--esp-2);
+  margin-top: var(--esp-1);
+}
+
+/* ── Toast ─────────────────────────────────────────────────────────────── */
+.ds-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(var(--esp-3), env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  max-width: calc(100vw - var(--esp-4));
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--superficie-nocturna);
+  color: var(--tinta-sobre-nocturno);
+  border-left: 4px solid var(--tinta-suave);
+  border-radius: var(--radio-m);
+  box-shadow: var(--sombra-elevada);
+  font-family: var(--fuente-ui);
+  font-size: 15px;
+}
+.ds-toast--exito {
+  border-left-color: var(--exito);
+}
+.ds-toast--pare {
+  border-left-color: var(--pare);
+}
+.ds-toast--coma {
+  border-left-color: var(--coma);
+}
+/* Posición estática para el storybook */
+.ds-toast--estatico {
+  position: static;
+  transform: none;
+  display: inline-flex;
+}
+
+/* ── Skeleton ──────────────────────────────────────────────────────────── */
+.ds-skeleton {
+  background: var(--coma-tenue);
+  border-radius: var(--radio-s);
+  animation: ds-pulso 1.4s ease-in-out infinite;
+}
+@keyframes ds-pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }

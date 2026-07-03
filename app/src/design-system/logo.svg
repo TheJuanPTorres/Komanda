@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="PARE Y COMA">
+  <polygon points="70,0 170,0 240,70 240,170 170,240 70,240 0,170 0,70" fill="#BE2026"/>
+  <polygon points="70,0 170,0 240,70 240,170 170,240 70,240 0,170 0,70"
+           fill="none" stroke="#F0E5C9" stroke-width="7" transform="translate(120 120) scale(0.86) translate(-120 -120)"/>
+  <g fill="#F0E5C9" font-family="'DM Sans', Arial, sans-serif" text-anchor="middle">
+    <text x="120" y="118" font-size="52" font-weight="800" letter-spacing="2">PARE</text>
+    <text x="120" y="162" font-size="30" font-weight="800" letter-spacing="3">Y COMA</text>
+  </g>
+</svg>

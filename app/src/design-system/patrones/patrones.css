@@ -1,0 +1,265 @@
+/* Patrones del sistema PARE Y COMA. Compuestos SOLO con tokens y primitivas. */
+
+/* ── TarjetaProducto (toma rápida, sin fotos) ──────────────────────────── */
+.pat-producto {
+  position: relative;
+  width: 100%;
+  min-height: 88px;
+  text-align: left;
+  cursor: pointer;
+  background: var(--superficie-1);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-l);
+  padding: var(--esp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  transition:
+    transform var(--dur-rapida) var(--curva),
+    border-color var(--dur-rapida) var(--curva);
+}
+.pat-producto:active {
+  transform: scale(0.98);
+}
+.pat-producto:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.pat-producto__nombre {
+  font-family: var(--fuente-ui);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 15px;
+  line-height: 1.15;
+  color: var(--tinta-fuerte);
+}
+.pat-producto__precio {
+  font-family: var(--fuente-datos);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: var(--tinta-fuerte);
+}
+.pat-producto__badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--radio-pill);
+}
+.pat-producto__badge--stock {
+  background: var(--coma);
+  color: var(--tinta-fuerte);
+}
+.pat-producto__badge--agotado {
+  background: transparent;
+  border: 2px solid var(--pare);
+  color: var(--pare);
+}
+.pat-producto__contador {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: var(--radio-pill);
+  background: var(--pare);
+  color: var(--tinta-sobre-nocturno);
+  border: 2px solid var(--superficie-0);
+  font-family: var(--fuente-datos);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+}
+
+/* ── TarjetaMesa (la placa vial) ───────────────────────────────────────── */
+.pat-mesa {
+  width: 100%;
+  min-height: 120px;
+  text-align: left;
+  cursor: pointer;
+  background: var(--superficie-1);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-l);
+  padding: var(--esp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  transition: transform var(--dur-rapida) var(--curva);
+}
+.pat-mesa:active {
+  transform: scale(0.99);
+}
+.pat-mesa--ocupada {
+  border: 2px solid var(--linea-fuerte);
+}
+.pat-mesa--por_cobrar {
+  background: var(--coma-tenue);
+  border: 2px solid var(--coma);
+}
+.pat-mesa__numero {
+  font-family: var(--fuente-display);
+  font-size: 44px;
+  line-height: 1;
+  color: var(--tinta-fuerte);
+}
+.pat-mesa__turno {
+  font-family: var(--fuente-display);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--pare);
+}
+.pat-mesa__cliente {
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 14px;
+  color: var(--tinta-fuerte);
+}
+.pat-mesa__estado {
+  font-family: var(--fuente-ui);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--tinta-media);
+}
+.pat-mesa__total {
+  margin-top: auto;
+  font-family: var(--fuente-datos);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  color: var(--tinta-fuerte);
+}
+
+/* ── DisplayTotal (el letrero de neón nocturno) ────────────────────────── */
+.pat-total {
+  background: var(--superficie-nocturna);
+  border-radius: var(--radio-l);
+  padding: var(--esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+}
+.pat-total__etiqueta {
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  color: var(--tinta-sobre-nocturno);
+  opacity: 0.7;
+}
+.pat-total__monto {
+  font-family: var(--fuente-display);
+  color: var(--coma);
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── LineaPedido ───────────────────────────────────────────────────────── */
+.pat-linea {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) 0;
+}
+.pat-linea__cant {
+  font-family: var(--fuente-datos);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  color: var(--tinta-fuerte);
+  min-width: 28px;
+}
+.pat-linea__nombre {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--fuente-ui);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--tinta-fuerte);
+}
+.pat-linea__sub {
+  font-family: var(--fuente-datos);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: var(--tinta-fuerte);
+  text-align: right;
+  min-width: 84px;
+}
+.pat-linea__quitar {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-m);
+  color: var(--pare);
+  cursor: pointer;
+}
+.pat-linea__quitar:active {
+  transform: scale(0.96);
+}
+
+/* ── TecladoPin ────────────────────────────────────────────────────────── */
+.pat-pin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+.pat-pin__puntos {
+  display: flex;
+  justify-content: center;
+  gap: var(--esp-3);
+  min-height: 18px;
+}
+.pat-pin__punto {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radio-pill);
+  border: 2px solid var(--linea);
+}
+.pat-pin__punto--lleno {
+  background: var(--pare);
+  border-color: var(--pare);
+}
+.pat-pin__teclas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--esp-2);
+}
+.pat-pin__tecla {
+  height: 64px;
+  display: grid;
+  place-items: center;
+  background: var(--superficie-2);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-m);
+  font-family: var(--fuente-datos);
+  font-weight: 500;
+  font-size: 24px;
+  color: var(--tinta-fuerte);
+  cursor: pointer;
+}
+.pat-pin__tecla:active {
+  transform: scale(0.97);
+  border-color: var(--linea-fuerte);
+}
+.pat-pin__tecla--accion {
+  color: var(--pare);
+}

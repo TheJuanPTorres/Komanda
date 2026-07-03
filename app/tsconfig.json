@@ -14,5 +14,12 @@
     "sourceMap": false,
     "types": []
   },
-  "include": ["src", "vite.config.ts"]
+  "//": "Fase de diseño: se compila SOLO el sistema de diseño + la muestra. Las pantallas previas (features/, estado/, etc.) quedan fuera y se reconstruirán sobre el sistema aprobado en la Fase 2.",
+  "include": [
+    "src/design-system",
+    "src/muestra",
+    "src/main.tsx",
+    "src/vite-env.d.ts",
+    "vite.config.ts"
+  ]
 }

@@ -1,96 +1,113 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   Sistema de diseño — tokens base.
-   Dirección: táctil y de alto contraste, pensado para el pulgar en un celular
-   y para leerse rápido en barra/cocina. Paleta cálida (comida rápida).
+   PARE Y COMA — sistema de diseño. Tokens base.
+   Concepto: señalética vial. Plano, rotundo, cálido. Nunca dashboard SaaS.
+   Está PROHIBIDO estilar por fuera de estos tokens y las primitivas.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Superficies y tinta */
-  --color-fondo: #f5f3f0;
-  --color-superficie: #ffffff;
-  --color-superficie-2: #faf9f7;
-  --color-tinta: #1c1917;
-  --color-tinta-suave: #78716c;
-  --color-borde: #e7e5e4;
+  /* Tipografías (autoalojadas, ver fuentes.ts) */
+  --fuente-display: 'Bungee', system-ui, sans-serif; /* SOLO números de mesa, turnos, monto del total, títulos de 1 línea */
+  --fuente-ui: 'DM Sans', system-ui, sans-serif; /* todo lo demás */
+  --fuente-datos: 'DM Mono', ui-monospace, 'Courier New', monospace; /* dinero, horas, cantidades, consecutivos */
 
-  /* Acento (tomate) para acciones principales */
-  --color-acento: #e8481c;
-  --color-acento-fuerte: #c33a12;
-  --color-acento-suave: #fdeae3;
-  --color-sobre-acento: #ffffff;
+  /* Superficies (tema Papel — el único de v1; el modo Nocturno llegará en v2) */
+  --superficie-0: #f0e5c9; /* Papel: fondo global de la app */
+  --superficie-1: #fbf4e4; /* tarjetas y paneles sobre el papel */
+  --superficie-2: #fffbef; /* modales, capas elevadas, campos de texto */
+  --superficie-nocturna: #15110a; /* panel del total y momentos de énfasis */
 
-  /* Semánticos */
-  --color-exito: #15803d;
-  --color-exito-suave: #dcfce7;
-  --color-peligro: #dc2626;
-  --color-peligro-suave: #fee2e2;
-  --color-aviso: #b45309;
+  /* Tintas */
+  --tinta-fuerte: #15110a;
+  --tinta-media: #5c5142;
+  --tinta-suave: #8c7f6b;
+  --tinta-sobre-nocturno: #f0e5c9;
 
-  /* Estados de mesa */
-  --color-libre: #16a34a;
-  --color-ocupada: var(--color-acento);
+  /* Marca y semánticos */
+  --pare: #be2026; /* rojo marca: acción primaria y solo eso */
+  --pare-presionado: #9e1a1f;
+  --coma: #f5c518; /* amarillo: selección activa, alerta, stock bajo */
+  --coma-tenue: #fae9b4;
+  --exito: #2e7d46; /* pedido cobrado, pago confirmado */
+  --peligro: #be2026; /* comparte el rojo: lo destructivo SIEMPRE va en
+                                variante outline + modal de confirmación, nunca
+                                sólido, para no confundirse con la acción primaria */
+  --dinero: #15110a; /* el dinero es tinta fuerte en DM Mono; en el
+                                DisplayTotal nocturno, el monto va en --coma */
 
-  /* Espaciado (múltiplos de 4) */
+  /* Bordes y línea */
+  --linea: #d9cca8;
+  --linea-fuerte: #15110a; /* borde 2px estilo señal en elementos activos */
+
+  /* Espaciado 8pt */
   --esp-1: 4px;
   --esp-2: 8px;
-  --esp-3: 12px;
-  --esp-4: 16px;
-  --esp-5: 24px;
-  --esp-6: 32px;
-  --esp-7: 48px;
+  --esp-3: 16px;
+  --esp-4: 24px;
+  --esp-5: 32px;
+  --esp-6: 48px;
 
-  /* Radios */
-  --radio-sm: 8px;
-  --radio: 12px;
-  --radio-lg: 20px;
-  --radio-full: 999px;
+  /* Radios: generosos como la referencia */
+  --radio-s: 10px;
+  --radio-m: 14px;
+  --radio-l: 22px;
+  --radio-pill: 999px;
 
-  /* Sombras */
-  --sombra-1: 0 1px 2px rgba(28, 25, 23, 0.06), 0 1px 3px rgba(28, 25, 23, 0.1);
-  --sombra-2: 0 4px 6px rgba(28, 25, 23, 0.05), 0 10px 20px rgba(28, 25, 23, 0.12);
+  /* Sombra: UNA sola, cálida y sutil (tinta al 12%), solo para capas elevadas */
+  --sombra-elevada: 0 4px 16px rgba(21, 17, 10, 0.12);
 
-  /* Tipografía */
-  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --texto-xs: 12px;
-  --texto-sm: 14px;
-  --texto-md: 16px;
-  --texto-lg: 20px;
-  --texto-xl: 26px;
-  --texto-2xl: 34px;
+  /* Motion */
+  --dur-rapida: 120ms;
+  --dur-media: 200ms;
+  --curva: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Objetivo táctil mínimo cómodo */
-  --toque: 48px;
+  /* Táctil */
+  --target-min: 48px;
+  --target-critico: 56px;
 }
 
+/* ── Reset mínimo ────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
-
 html,
 body,
 #raiz {
   height: 100%;
 }
-
 body {
   margin: 0;
-  font-family: var(--fuente);
-  color: var(--color-tinta);
-  background: var(--color-fondo);
+  font-family: var(--fuente-ui);
+  font-weight: 400;
+  color: var(--tinta-fuerte);
+  background: var(--superficie-0);
   -webkit-font-smoothing: antialiased;
-  /* Evita el zoom por doble toque y resalta menos la selección en táctil */
   -webkit-tap-highlight-color: transparent;
 }
-
-button {
-  font-family: inherit;
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+/* Foco visible estilo señal: sin glow azul del navegador */
+:focus-visible {
+  outline: 2px solid var(--tinta-fuerte);
+  outline-offset: 2px;
 }
 
-/* Utilidades mínimas usadas por las pantallas */
-.pila {
-  display: flex;
-  flex-direction: column;
+/* El dinero SIEMPRE en DM Mono con cifras tabulares */
+.dinero {
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
 }
-.fila {
-  display: flex;
-  align-items: center;
+
+/* Respeto por quien pide menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

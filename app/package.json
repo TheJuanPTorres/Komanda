@@ -10,7 +10,11 @@
     "iconos": "node scripts/generar-iconos.mjs"
   },
   "dependencies": {
+    "@fontsource/bungee": "^5.2.7",
+    "@fontsource/dm-mono": "^5.2.7",
+    "@fontsource/dm-sans": "^5.2.8",
     "@pos/shared": "*",
+    "lucide-react": "^1.23.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.1",
