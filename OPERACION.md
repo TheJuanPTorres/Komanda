@@ -1,7 +1,7 @@
 # Guía de operación — POS Local
 
 Sistema de punto de venta que corre **100% en la red del negocio**, sin nube.
-Un solo equipo (la "caja": laptop o mini PC) hace de servidor; los meseros
+Un solo equipo (la "caja": laptop o mini PC) hace de servidor; los auxiliares
 entran desde sus celulares por el navegador.
 
 ---
@@ -18,7 +18,7 @@ Desde la carpeta del proyecto:
 ```bash
 npm install          # instala todo
 npm run build        # compila servidor y app
-npm run seed         # crea el admin (PIN 1234), meseros y productos de ejemplo
+npm run seed         # crea el admin (PIN 1234), auxiliares y el catálogo
 pm2 start ecosystem.config.js
 pm2 save             # recuerda el proceso
 pm2 startup          # que arranque solo al prender la máquina (seguir la instrucción que imprime)
@@ -39,7 +39,7 @@ pm2 restart pos-server
 2. Averigua la IP de la caja: en Windows, `ipconfig` → "Dirección IPv4"
    (algo como `192.168.0.22`).
 3. En el celular, abre el navegador y entra a: **`http://192.168.0.22:3000`**
-   (usa la IP de tu caja). Cada mesero toca su nombre; el admin entra con PIN.
+   (usa la IP de tu caja). Cada auxiliar toca su nombre; el admin entra con PIN.
 
 ## 4. Instalar como app en el celular (PWA)
 
@@ -61,16 +61,19 @@ celular):
 
 ## 5. Respaldos (¡importante!)
 
-Toda la información vive en un solo archivo: `server/data/pos.db`.
+Toda la información vive en la carpeta `server/data/`: la base de datos
+(`pos.db`) y las fotos de los productos (`imagenes/`).
 
-Crea una copia consistente con:
+Crea una copia consistente de ambas con:
 
 ```bash
 npm run respaldo
 ```
 
-Deja la copia en `server/data/respaldos/` y conserva las últimas 14.
-**Cópialas también a una USB o a otra carpeta de vez en cuando.**
+Cada respaldo es una carpeta `server/data/respaldos/{fecha}/` que contiene
+`pos.db` (copia consistente, segura aunque el sistema esté en uso) y la carpeta
+`imagenes/`. Se conservan los últimos 14.
+**Copia esas carpetas también a una USB o a otra ubicación de vez en cuando.**
 
 ### Agendar el respaldo automático (Windows)
 
@@ -84,9 +87,10 @@ Iniciar en: C:\ruta\al\proyecto\server
 
 ### Restaurar un respaldo
 
-Con el servidor detenido (`pm2 stop pos-server`), reemplaza
-`server/data/pos.db` por la copia deseada (renómbrala a `pos.db`) y borra los
-archivos `pos.db-wal` y `pos.db-shm` si existen. Luego `pm2 start pos-server`.
+Con el servidor detenido (`pm2 stop pos-server`), copia desde la carpeta de
+respaldo deseada su `pos.db` a `server/data/pos.db` (borra los archivos
+`pos.db-wal` y `pos.db-shm` si existen) y su carpeta `imagenes/` a
+`server/data/imagenes/`. Luego `pm2 start pos-server`.
 
 ## 6. Actualizar el sistema
 

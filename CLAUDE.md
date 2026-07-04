@@ -4,7 +4,13 @@
 Sistema de punto de venta para un negocio de comida rápida en Colombia.
 4 mesas físicas + pedidos en barra (nombre del cliente + turno diario B-01, B-02…).
 100% local: corre en una laptop/mini PC en la red del negocio, sin nube, sin licencias.
-Los meseros usan celulares (PWA); el admin usa el equipo de caja o su celular.
+Los auxiliares usan celulares (PWA); el admin usa el equipo de caja o su celular.
+
+## Roles
+Dos roles: `admin` y `auxiliar` (el nombre del rol de personal se renombró en
+toda la base y el código). Los auxiliares toman pedidos y pueden CORREGIR pedidos
+ABIERTOS (bajar cantidades y eliminar items agregados por error); no manejan
+dinero. El admin además cobra, cierra y administra.
 
 ## Regla de negocio SAGRADA
 Solo el rol `admin` puede cobrar y cerrar pedidos. Esta regla se valida SIEMPRE

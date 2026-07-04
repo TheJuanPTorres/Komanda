@@ -4,8 +4,9 @@
 import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
+import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { SaludResp } from '@pos/shared';
 import { config, enProduccion } from './config.js';
@@ -43,8 +44,20 @@ async function construirServidor() {
     // El JWT viaja en la cookie httpOnly; jwtVerify() la lee de aquí.
     cookie: { cookieName: config.cookieSesion, signed: false }
   });
+  // Subida de imágenes de producto (máx 5 MB por archivo).
+  await app.register(fastifyMultipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
   registrarManejadorErrores(app);
+
+  // Sirve las imágenes de producto en /imagenes (carpeta local, sin CDN).
+  // decorateReply:false porque el estático del front (más abajo) ya aporta
+  // reply.sendFile; no puede declararse dos veces.
+  mkdirSync(config.rutaImagenes, { recursive: true });
+  await app.register(fastifyStatic, {
+    root: config.rutaImagenes,
+    prefix: '/imagenes/',
+    decorateReply: false
+  });
 
   // ── Rutas de infraestructura ──────────────────────────────────────────
   const arrancado = Date.now();

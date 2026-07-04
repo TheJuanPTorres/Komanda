@@ -1,6 +1,6 @@
 // Manejo uniforme de errores. Todas las respuestas de error del servidor
 // tienen la forma { error: { codigo, mensaje } } y los mensajes están
-// escritos para humanos no técnicos (los verá el cajero/mesero).
+// escritos para humanos no técnicos (los verá el cajero/auxiliar).
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
 import type { ErrorResp } from '@pos/shared';
@@ -36,6 +36,8 @@ export const errores = {
     new ErrorApp(404, 'PEDIDO_NO_ENCONTRADO', 'Ese pedido ya no existe.'),
   pedidoNoAbierto: () =>
     new ErrorApp(409, 'PEDIDO_NO_ABIERTO', 'Ese pedido ya no está abierto.'),
+  pedidoNoEditable: () =>
+    new ErrorApp(403, 'PEDIDO_NO_EDITABLE', 'Este pedido ya se cobró o canceló; no se puede corregir.'),
   itemNoEncontrado: () =>
     new ErrorApp(404, 'ITEM_NO_ENCONTRADO', 'Ese producto ya no está en el pedido.'),
   productoNoDisponible: () =>
@@ -45,7 +47,9 @@ export const errores = {
   montoNoCuadra: () =>
     new ErrorApp(400, 'MONTO_NO_CUADRA', 'La suma de los pagos no coincide con el total del pedido.'),
   cajaYaCerrada: () =>
-    new ErrorApp(409, 'CAJA_YA_CERRADA', 'La caja de hoy ya fue cerrada.')
+    new ErrorApp(409, 'CAJA_YA_CERRADA', 'La caja de hoy ya fue cerrada.'),
+  imagenInvalida: (mensaje = 'La imagen no es válida.') =>
+    new ErrorApp(400, 'IMAGEN_INVALIDA', mensaje)
 };
 
 export function responderError(

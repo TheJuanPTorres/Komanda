@@ -1,16 +1,15 @@
 /* Patrones del sistema PARE Y COMA. Compuestos SOLO con tokens y primitivas. */
 
-/* ── TarjetaProducto (toma rápida, sin fotos) ──────────────────────────── */
+/* ── TarjetaProducto (toma rápida, foto arriba) ────────────────────────── */
 .pat-producto {
   position: relative;
   width: 100%;
-  min-height: 88px;
   text-align: left;
   cursor: pointer;
   background: var(--superficie-1);
   border: 1px solid var(--linea);
   border-radius: var(--radio-l);
-  padding: var(--esp-3);
+  padding: var(--esp-2);
   display: flex;
   flex-direction: column;
   gap: var(--esp-2);
@@ -25,6 +24,29 @@
   cursor: not-allowed;
   opacity: 0.6;
 }
+/* Foto: contenedor 4/3, esquinas internas redondeadas, fondo mientras carga */
+.pat-producto__foto {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radio-m);
+  overflow: hidden;
+  background: var(--coma-tenue);
+  display: grid;
+  place-items: center;
+}
+.pat-producto__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pat-producto__inicial {
+  font-family: var(--fuente-display);
+  font-size: clamp(2rem, 12vw, 3rem);
+  color: var(--pare);
+  line-height: 1;
+}
 .pat-producto__nombre {
   font-family: var(--fuente-ui);
   font-weight: 800;
@@ -33,16 +55,28 @@
   font-size: 15px;
   line-height: 1.15;
   color: var(--tinta-fuerte);
+  padding: 0 var(--esp-1);
+  /* Máximo 2 líneas con ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .pat-producto__precio {
   font-family: var(--fuente-datos);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  font-size: 15px;
+  /* Nunca por debajo de 16px, ni siquiera a 2 columnas en 360px */
+  font-size: 16px;
   color: var(--tinta-fuerte);
+  padding: 0 var(--esp-1) var(--esp-1);
 }
+/* Badge de stock/agotado, superpuesto abajo-izquierda de la foto */
 .pat-producto__badge {
-  align-self: flex-start;
+  position: absolute;
+  left: var(--esp-1);
+  bottom: var(--esp-1);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -59,21 +93,22 @@
   color: var(--tinta-fuerte);
 }
 .pat-producto__badge--agotado {
-  background: transparent;
+  background: var(--superficie-2);
   border: 2px solid var(--pare);
   color: var(--pare);
 }
+/* Contador de unidades, arriba a la derecha SOBRE la foto */
 .pat-producto__contador {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  top: var(--esp-1);
+  right: var(--esp-1);
   min-width: 30px;
   height: 30px;
   padding: 0 6px;
   border-radius: var(--radio-pill);
   background: var(--pare);
   color: var(--tinta-sobre-nocturno);
-  border: 2px solid var(--superficie-0);
+  border: 2px solid var(--superficie-1);
   font-family: var(--fuente-datos);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -172,8 +207,9 @@
 .pat-linea {
   display: flex;
   align-items: center;
-  gap: var(--esp-3);
+  gap: var(--esp-2) var(--esp-3);
   padding: var(--esp-2) 0;
+  flex-wrap: wrap;
 }
 .pat-linea__cant {
   font-family: var(--fuente-datos);
@@ -200,20 +236,30 @@
   text-align: right;
   min-width: 84px;
 }
-.pat-linea__quitar {
+.pat-linea__controles {
+  display: flex;
+  gap: var(--esp-2);
+  margin-left: auto;
+}
+.pat-linea__paso {
   width: 48px;
   height: 48px;
   flex: none;
   display: grid;
   place-items: center;
-  background: transparent;
+  background: var(--superficie-2);
   border: 1px solid var(--linea);
   border-radius: var(--radio-m);
-  color: var(--pare);
+  color: var(--tinta-fuerte);
   cursor: pointer;
 }
-.pat-linea__quitar:active {
+.pat-linea__paso:active {
   transform: scale(0.96);
+  border-color: var(--linea-fuerte);
+}
+.pat-linea__paso--quitar {
+  color: var(--pare);
+  border-color: var(--pare);
 }
 
 /* ── TecladoPin ────────────────────────────────────────────────────────── */

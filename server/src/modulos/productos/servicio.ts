@@ -19,6 +19,7 @@ interface FilaProducto {
   stock: number;
   stock_minimo: number;
   activo: number;
+  imagen: string | null;
   creado_en: string;
   actualizado_en: string;
 }
@@ -34,6 +35,7 @@ function aProducto(f: FilaProducto): Producto {
     stock: f.stock,
     stock_minimo: f.stock_minimo,
     activo: f.activo === 1,
+    imagen: f.imagen,
     creado_en: f.creado_en,
     actualizado_en: f.actualizado_en
   };
@@ -64,4 +66,27 @@ export function obtenerProductoActivo(id: number): Producto | undefined {
     .prepare('SELECT * FROM productos WHERE id = ? AND activo = 1')
     .get(id) as FilaProducto | undefined;
   return fila ? aProducto(fila) : undefined;
+}
+
+/** Un producto por id sin importar si está activo (para el admin). */
+export function obtenerProducto(id: number): Producto | undefined {
+  const fila = db.prepare('SELECT * FROM productos WHERE id = ?').get(id) as
+    | FilaProducto
+    | undefined;
+  return fila ? aProducto(fila) : undefined;
+}
+
+/** Todos los productos activos (para la administración del catálogo). */
+export function listarProductos(): Producto[] {
+  const filas = db
+    .prepare('SELECT * FROM productos WHERE activo = 1 ORDER BY categoria_id, nombre')
+    .all() as FilaProducto[];
+  return filas.map(aProducto);
+}
+
+/** Actualiza la ruta de la imagen del producto (o la borra con null). */
+export function actualizarImagenProducto(id: number, imagen: string | null): void {
+  db.prepare(
+    "UPDATE productos SET imagen = ?, actualizado_en = datetime('now') WHERE id = ?"
+  ).run(imagen, id);
 }

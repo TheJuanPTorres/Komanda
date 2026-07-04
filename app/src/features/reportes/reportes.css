@@ -228,6 +228,17 @@
   color: var(--tinta-media);
   margin: 0;
 }
+.rep-aviso {
+  font-family: var(--fuente-ui);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--tinta-fuerte);
+  background: var(--coma-tenue);
+  border: 2px solid var(--coma);
+  border-radius: var(--radio-m);
+  padding: var(--esp-3);
+  margin-bottom: var(--esp-3);
+}
 .rep-banner {
   font-family: var(--fuente-ui);
   font-weight: 700;

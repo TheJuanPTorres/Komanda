@@ -1,9 +1,10 @@
 // Tomar pedido: menú (TarjetaProducto) + cuenta (LineaPedido + DisplayTotal).
-// Tocar un producto agrega 1 (mesero y admin). El botón − de cada línea baja/
-// quita y SOLO lo ve el admin (el servidor lo refuerza). Cobrar/cancelar: admin.
+// Tocar un producto agrega 1. Cada línea tiene −/+/eliminar: auxiliares y
+// admin pueden corregir el pedido ABIERTO (el servidor lo refuerza). Si al
+// eliminar el pedido queda vacío, se cancela solo. Cobrar/cancelar: solo admin.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { PedidoConItems } from '@pos/shared';
+import type { PedidoConItems, PedidoItem } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
 import { useStore } from '../../estado/store.js';
 import { turnoBarra } from '../../lib/etiquetas.js';
@@ -11,6 +12,7 @@ import {
   Boton,
   DisplayTotal,
   LineaPedido,
+  Modal,
   TarjetaProducto,
   formatearDinero
 } from '../../design-system/index.js';
@@ -39,6 +41,7 @@ export function TomarPedido() {
   const [buscando, setBuscando] = useState(!pedido);
   const [error, setError] = useState('');
   const [cobrando, setCobrando] = useState(false);
+  const [porEliminar, setPorEliminar] = useState<PedidoItem | null>(null);
 
   useEffect(() => {
     if (menu.length === 0) cargarMenu().catch(() => {});
@@ -117,6 +120,7 @@ export function TomarPedido() {
                       key={prod.id}
                       nombre={prod.nombre}
                       precio={prod.precio}
+                      imagen={prod.imagen}
                       cantidad={cantidadPorProducto.get(prod.id) ?? 0}
                       stock={controla ? prod.stock : undefined}
                       agotado={controla && prod.stock <= 0}
@@ -144,16 +148,14 @@ export function TomarPedido() {
                   cantidad={it.cantidad}
                   nombre={it.nombre_producto}
                   subtotal={it.precio_unitario * it.cantidad}
-                  onQuitar={
-                    esAdmin
-                      ? () =>
-                          conManejo(() =>
-                            it.cantidad <= 1
-                              ? quitarItem(p.id, it.id)
-                              : cambiarCantidad(p.id, it.id, it.cantidad - 1)
-                          )
+                  // Auxiliares y admin corrigen el pedido abierto.
+                  onMenos={
+                    it.cantidad > 1
+                      ? () => conManejo(() => cambiarCantidad(p.id, it.id, it.cantidad - 1))
                       : undefined
                   }
+                  onMas={() => conManejo(() => agregarItem(p.id, it.producto_id))}
+                  onEliminar={() => setPorEliminar(it)}
                 />
               ))
             )}
@@ -191,6 +193,35 @@ export function TomarPedido() {
           onCerrar={() => setCobrando(false)}
           onCobrado={() => navegar('/')}
         />
+      )}
+
+      {porEliminar && (
+        <Modal titulo="¿Quitar este producto?" onCerrar={() => setPorEliminar(null)}>
+          <p className="ds-modal__consecuencia">
+            Se quita “{porEliminar.nombre_producto}” del pedido. Si es lo último, el pedido se
+            cancela.
+          </p>
+          <div className="ds-modal__acciones">
+            <Boton variante="secundario" bloque onClick={() => setPorEliminar(null)}>
+              Volver
+            </Boton>
+            <Boton
+              variante="peligro"
+              bloque
+              onClick={() => {
+                const it = porEliminar;
+                setPorEliminar(null);
+                conManejo(async () => {
+                  const actualizado = await quitarItem(p.id, it.id);
+                  // Si el pedido quedó vacío, el servidor lo canceló: volver al piso.
+                  if (actualizado.pedido.estado !== 'abierto') navegar('/');
+                });
+              }}
+            >
+              Sí, quitar
+            </Boton>
+          </div>
+        </Modal>
       )}
     </div>
   );

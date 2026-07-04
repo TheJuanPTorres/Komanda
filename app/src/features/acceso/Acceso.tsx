@@ -1,4 +1,4 @@
-// Pantalla de acceso: cada mesero toca su nombre; el admin entra con PIN.
+// Pantalla de acceso: cada auxiliar toca su nombre; el admin entra con PIN.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Usuario } from '@pos/shared';
@@ -11,10 +11,10 @@ import './acceso.css';
 
 export function Acceso() {
   const navegar = useNavigate();
-  const entrarMesero = useStore((s) => s.entrarMesero);
+  const entrarAuxiliar = useStore((s) => s.entrarAuxiliar);
   const entrarAdmin = useStore((s) => s.entrarAdmin);
 
-  const [meseros, setMeseros] = useState<Usuario[] | null>(null);
+  const [auxiliares, setAuxiliares] = useState<Usuario[] | null>(null);
   const [modoAdmin, setModoAdmin] = useState(false);
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -22,16 +22,16 @@ export function Acceso() {
 
   useEffect(() => {
     api
-      .get<{ meseros: Usuario[] }>('/api/usuarios/meseros')
-      .then((r) => setMeseros(r.meseros))
-      .catch(() => setMeseros([]));
+      .get<{ auxiliares: Usuario[] }>('/api/usuarios/auxiliares')
+      .then((r) => setAuxiliares(r.auxiliares))
+      .catch(() => setAuxiliares([]));
   }, []);
 
-  async function accederMesero(id: number) {
+  async function accederAuxiliar(id: number) {
     setError('');
     setOcupado(true);
     try {
-      await entrarMesero(id);
+      await entrarAuxiliar(id);
       navegar('/', { replace: true });
     } catch (e) {
       setError(e instanceof ErrorApi ? e.message : 'No se pudo entrar.');
@@ -53,7 +53,7 @@ export function Acceso() {
     }
   }
 
-  if (meseros === null) return <Cargando />;
+  if (auxiliares === null) return <Cargando />;
 
   return (
     <div className="acceso">
@@ -69,24 +69,24 @@ export function Acceso() {
         {!modoAdmin ? (
           <>
             <div>
-              <div className="acceso__seccion">Meseros</div>
-              <div className="acceso__meseros">
-                {meseros.map((m) => (
+              <div className="acceso__seccion">Auxiliares</div>
+              <div className="acceso__auxiliares">
+                {auxiliares.map((a) => (
                   <Boton
-                    key={m.id}
+                    key={a.id}
                     variante="secundario"
                     flujo
                     disabled={ocupado}
-                    onClick={() => accederMesero(m.id)}
+                    onClick={() => accederAuxiliar(a.id)}
                   >
-                    {m.nombre}
+                    {a.nombre}
                   </Boton>
                 ))}
               </div>
-              {meseros.length === 0 && (
+              {auxiliares.length === 0 && (
                 <p className="vacio">
                   <strong>Nadie en turno.</strong>
-                  Registra los meseros para empezar.
+                  Registra los auxiliares para empezar.
                 </p>
               )}
             </div>

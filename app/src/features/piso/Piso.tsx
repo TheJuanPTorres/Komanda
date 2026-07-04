@@ -70,6 +70,9 @@ export function Piso() {
     <>
       {sesion?.rol === 'admin' && (
         <>
+          <Boton variante="secundario" onClick={() => navegar('/productos')}>
+            Productos
+          </Boton>
           <Boton variante="secundario" onClick={() => navegar('/gastos')}>
             Gastos
           </Boton>
@@ -91,7 +94,7 @@ export function Piso() {
     <div className="piso">
       <Encabezado
         titulo={sesion?.nombre ?? ''}
-        subtitulo={sesion?.rol === 'admin' ? 'Administrador' : 'Mesero'}
+        subtitulo={sesion?.rol === 'admin' ? 'Administrador' : 'Auxiliar'}
         acciones={acciones}
       />
 

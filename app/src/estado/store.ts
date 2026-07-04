@@ -8,6 +8,7 @@ import type {
   PagoReq,
   PedidoConItems,
   PedidoItem,
+  Producto,
   Sesion
 } from '@pos/shared';
 import { api } from '../lib/api.js';
@@ -26,7 +27,7 @@ interface EstadoApp {
   // Sesión
   cargarSesion: () => Promise<void>;
   entrarAdmin: (pin: string) => Promise<void>;
-  entrarMesero: (usuarioId: number) => Promise<void>;
+  entrarAuxiliar: (usuarioId: number) => Promise<void>;
   salir: () => Promise<void>;
 
   // Datos
@@ -40,7 +41,7 @@ interface EstadoApp {
   crearBarra: (clienteNombre: string) => Promise<PedidoConItems>;
   agregarItem: (pedidoId: number, productoId: number, cantidad?: number) => Promise<void>;
   cambiarCantidad: (pedidoId: number, itemId: number, cantidad: number) => Promise<void>;
-  quitarItem: (pedidoId: number, itemId: number) => Promise<void>;
+  quitarItem: (pedidoId: number, itemId: number) => Promise<PedidoConItems>;
   cambiarNota: (pedidoId: number, nota: string) => Promise<void>;
   cancelarPedido: (pedidoId: number) => Promise<void>;
   cobrar: (pedidoId: number, pagos: PagoReq[]) => Promise<void>;
@@ -48,6 +49,7 @@ interface EstadoApp {
   // Aplicados por tiempo real o por respuestas de la API (idempotentes).
   aplicarPedido: (p: PedidoConItems) => void;
   quitarPedidoLocal: (pedidoId: number) => void;
+  aplicarProducto: (producto: Producto) => void;
 }
 
 type RespPedido = { pedido: PedidoConItems };
@@ -76,8 +78,8 @@ export const useStore = create<EstadoApp>((set, get) => ({
     conectarSocket();
   },
 
-  entrarMesero: async (usuarioId) => {
-    const { usuario } = await api.post<LoginResp>('/api/auth/mesero', { usuarioId });
+  entrarAuxiliar: async (usuarioId) => {
+    const { usuario } = await api.post<LoginResp>('/api/auth/auxiliar', { usuarioId });
     set({ sesion: usuario });
     conectarSocket();
   },
@@ -129,6 +131,7 @@ export const useStore = create<EstadoApp>((set, get) => ({
   quitarItem: async (pedidoId, itemId) => {
     const { pedido } = await api.delete<RespPedido>(`/api/pedidos/${pedidoId}/items/${itemId}`);
     get().aplicarPedido(pedido);
+    return pedido;
   },
 
   cambiarNota: async (pedidoId, nota) => {
@@ -157,5 +160,15 @@ export const useStore = create<EstadoApp>((set, get) => ({
 
   quitarPedidoLocal: (pedidoId) => {
     set({ pedidos: get().pedidos.filter((x) => x.pedido.id !== pedidoId) });
+  },
+
+  aplicarProducto: (producto) => {
+    // Reemplaza el producto dentro del menú agrupado (p. ej. cambió su foto).
+    set({
+      menu: get().menu.map((cat) => ({
+        ...cat,
+        productos: cat.productos.map((p) => (p.id === producto.id ? producto : p))
+      }))
+    });
   }
 }));

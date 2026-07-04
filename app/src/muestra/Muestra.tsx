@@ -286,8 +286,21 @@ export function Muestra() {
 
         <p className="mu__sub">LineaPedido</p>
         <Tarjeta style={{ padding: 'var(--esp-3)', maxWidth: 420 }}>
-          <LineaPedido cantidad={2} nombre="Choripapa" subtotal={24000} onQuitar={() => {}} />
-          <LineaPedido cantidad={1} nombre="Gaseosa 400 ml" subtotal={4000} onQuitar={() => {}} />
+          <LineaPedido
+            cantidad={2}
+            nombre="Choripapa"
+            subtotal={24000}
+            onMenos={() => {}}
+            onMas={() => {}}
+            onEliminar={() => {}}
+          />
+          <LineaPedido
+            cantidad={1}
+            nombre="Gaseosa 400 ml"
+            subtotal={4000}
+            onMas={() => {}}
+            onEliminar={() => {}}
+          />
         </Tarjeta>
 
         <p className="mu__sub">TecladoPin</p>

@@ -1,17 +1,21 @@
-// Respaldo de la base de datos. Usa la API de backup de SQLite (better-sqlite3),
-// que produce una copia CONSISTENTE aunque la DB esté en uso y en modo WAL
-// (no basta con copiar el .db a mano: se perdería el -wal).
+// Respaldo del sistema: la base de datos + las imágenes de producto.
+// La DB se copia con la API de backup de SQLite (better-sqlite3), que produce
+// una copia CONSISTENTE aunque esté en uso y en modo WAL (no basta con copiar
+// el .db a mano: se perdería el -wal). Las imágenes se copian tal cual.
 //
 // Uso: npm run respaldo            (desde la raíz o desde server/)
-// Deja las copias en server/data/respaldos/ y conserva las últimas 14.
+// Cada respaldo es una carpeta server/data/respaldos/{fecha}/ con pos.db e
+// imagenes/. Se conservan los últimos 14.
 import Database from 'better-sqlite3';
-import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
-const RUTA_DB = process.env.POS_DB ?? resolve(aqui, '..', 'data', 'pos.db');
-const DIR_RESPALDOS = resolve(aqui, '..', 'data', 'respaldos');
+const DIR_DATOS = process.env.POS_DB ? dirname(process.env.POS_DB) : resolve(aqui, '..', 'data');
+const RUTA_DB = process.env.POS_DB ?? join(DIR_DATOS, 'pos.db');
+const DIR_IMAGENES = join(DIR_DATOS, 'imagenes');
+const DIR_RESPALDOS = join(DIR_DATOS, 'respaldos');
 const CONSERVAR = 14;
 
 if (!existsSync(RUTA_DB)) {
@@ -19,26 +23,35 @@ if (!existsSync(RUTA_DB)) {
   process.exit(1);
 }
 
-mkdirSync(DIR_RESPALDOS, { recursive: true });
-
-// Marca de tiempo apta para nombre de archivo: 2026-07-02-23-30-05
+// Carpeta de este respaldo: server/data/respaldos/2026-07-03-21-30-05/
 const sello = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
-const destino = join(DIR_RESPALDOS, `pos-${sello}.db`);
+const carpeta = join(DIR_RESPALDOS, sello);
+mkdirSync(carpeta, { recursive: true });
 
+// 1) Base de datos (copia consistente).
 const db = new Database(RUTA_DB, { readonly: true });
 try {
-  await db.backup(destino);
-  console.log(`Respaldo creado: ${destino}`);
+  await db.backup(join(carpeta, 'pos.db'));
+  console.log(`Base respaldada: ${join(carpeta, 'pos.db')}`);
 } finally {
   db.close();
 }
 
-// Conserva solo las últimas N copias; borra las más viejas.
-const copias = readdirSync(DIR_RESPALDOS)
-  .filter((f) => /^pos-.*\.db$/.test(f))
-  .sort(); // nombre con fecha ISO => orden cronológico
-const sobran = copias.slice(0, Math.max(0, copias.length - CONSERVAR));
-for (const f of sobran) {
-  rmSync(join(DIR_RESPALDOS, f));
-  console.log(`Copia antigua eliminada: ${f}`);
+// 2) Imágenes de producto (si hay).
+if (existsSync(DIR_IMAGENES)) {
+  cpSync(DIR_IMAGENES, join(carpeta, 'imagenes'), { recursive: true });
+  console.log('Imágenes respaldadas.');
 }
+
+// Conserva solo los últimos N respaldos; borra los más viejos.
+const respaldos = readdirSync(DIR_RESPALDOS, { withFileTypes: true })
+  .filter((d) => d.isDirectory() && /^\d{4}-\d{2}-\d{2}-/.test(d.name))
+  .map((d) => d.name)
+  .sort(); // nombre con fecha ISO => orden cronológico
+const sobran = respaldos.slice(0, Math.max(0, respaldos.length - CONSERVAR));
+for (const nombre of sobran) {
+  rmSync(join(DIR_RESPALDOS, nombre), { recursive: true, force: true });
+  console.log(`Respaldo antiguo eliminado: ${nombre}`);
+}
+
+console.log(`Respaldo completo en ${carpeta}`);

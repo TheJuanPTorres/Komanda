@@ -58,6 +58,11 @@ export function reporteMargen(rango: RangoFechas): ReporteMargen {
   const tCosto = productos.reduce((a, p) => a + p.costo, 0);
   const tMargen = tIngresos - tCosto;
 
+  // Productos activos sin costo asignado: mientras haya, el margen no es fiable.
+  const sinCosto = db
+    .prepare('SELECT COUNT(*) AS n FROM productos WHERE activo = 1 AND costo = 0')
+    .get() as { n: number };
+
   return {
     rango,
     productos,
@@ -67,7 +72,8 @@ export function reporteMargen(rango: RangoFechas): ReporteMargen {
       costo: tCosto,
       margen: tMargen,
       margen_pct: pct(tMargen, tIngresos)
-    }
+    },
+    productos_sin_costo: sinCosto.n
   };
 }
 

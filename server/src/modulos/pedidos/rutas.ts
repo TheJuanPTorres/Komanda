@@ -2,8 +2,10 @@
 // correspondiente (el front no hace polling).
 //
 // Permisos (regla del dueño, reforzada en el servidor):
-//  - Agregar items / abrir pedido: cualquier sesión (mesero o admin).
-//  - Quitar/cambiar cantidad de items y cancelar: SOLO admin.
+//  - Agregar items / abrir pedido: cualquier sesión (auxiliar o admin).
+//  - Corregir items (reducir cantidad / quitar) en pedido ABIERTO: auxiliar y
+//    admin (los auxiliares corrigen errores de digitación; no manejan dinero).
+//  - Cobrar y cancelar: SOLO admin (regla sagrada, reforzada en el servidor).
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { PedidoConItems } from '@pos/shared';
@@ -86,8 +88,8 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
     return { pedido };
   });
 
-  // PATCH /api/pedidos/:id/items/:itemId — cambiar cantidad (SOLO admin).
-  app.patch('/api/pedidos/:id/items/:itemId', { preHandler: requiereRol('admin') }, async (req) => {
+  // PATCH /api/pedidos/:id/items/:itemId — cambiar cantidad (auxiliar o admin).
+  app.patch('/api/pedidos/:id/items/:itemId', { preHandler: requiereSesion }, async (req) => {
     const { id, itemId } = itemParams.parse(req.params);
     const { cantidad } = cambiarCantidadSchema.parse(req.body);
     const pedido = cambiarCantidad(id, itemId, cantidad);
@@ -95,11 +97,13 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
     return { pedido };
   });
 
-  // DELETE /api/pedidos/:id/items/:itemId — quitar línea (SOLO admin).
-  app.delete('/api/pedidos/:id/items/:itemId', { preHandler: requiereRol('admin') }, async (req) => {
+  // DELETE /api/pedidos/:id/items/:itemId — quitar línea (auxiliar o admin).
+  // Si el pedido queda vacío, se cancela automáticamente.
+  app.delete('/api/pedidos/:id/items/:itemId', { preHandler: requiereSesion }, async (req) => {
     const { id, itemId } = itemParams.parse(req.params);
-    const pedido = quitarItem(id, itemId);
-    emitirActualizado(pedido);
+    const { pedido, cancelado } = quitarItem(id, itemId, req.user.id);
+    if (cancelado) emisor.pedidoCancelado({ pedidoId: id });
+    else emitirActualizado(pedido);
     return { pedido };
   });
 

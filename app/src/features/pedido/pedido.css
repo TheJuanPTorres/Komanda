@@ -30,8 +30,15 @@
 }
 .pedido__cat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: var(--esp-3);
+  /* Móvil: exactamente 2 columnas */
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--esp-2);
+}
+@media (min-width: 640px) {
+  .pedido__cat-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--esp-3);
+  }
 }
 .pedido__cuenta {
   border-top: 2px solid var(--linea-fuerte);

@@ -35,10 +35,10 @@ export function buscarPorId(id: number): FilaUsuario | undefined {
     | undefined;
 }
 
-export function listarMeserosActivos(): Usuario[] {
+export function listarAuxiliaresActivos(): Usuario[] {
   const filas = db
     .prepare(
-      "SELECT * FROM usuarios WHERE rol = 'mesero' AND activo = 1 ORDER BY nombre"
+      "SELECT * FROM usuarios WHERE rol = 'auxiliar' AND activo = 1 ORDER BY nombre"
     )
     .all() as FilaUsuario[];
   return filas.map(aUsuario);

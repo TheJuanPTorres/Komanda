@@ -1,10 +1,11 @@
-// Datos iniciales para desarrollo/arranque del negocio.
+// Datos iniciales / catálogo real del negocio.
 // Uso: npm run seed
-// - 1 admin con PIN "1234"
-// - 2 meseros de ejemplo (sin PIN, entran por selección de nombre)
-// - 3 categorías y 8 productos de comida rápida colombiana (precios en COP)
+// - 1 admin con PIN "1234" y 2 auxiliares (sin PIN, entran por nombre)
+// - Catálogo real: ESPECIALIDADES y BEBIDAS (precios en COP, costo 0)
 //
-// Idempotente por tabla: si una tabla ya tiene datos, no la vuelve a sembrar.
+// IDEMPOTENTE por fila (por nombre): se puede correr sobre una base ya
+// sembrada sin duplicar; inserta solo lo que falte. El catálogo demo anterior
+// (hamburguesas/perros) se desactiva con borrado lógico si aún existe.
 import { db } from './conexion.js';
 import { migrar } from './migrador.js';
 import { hashearPin } from '../lib/pin.js';
@@ -12,78 +13,122 @@ import { hashearPin } from '../lib/pin.js';
 // Asegura que el esquema exista antes de insertar.
 migrar();
 
-function tablaVacia(tabla: string): boolean {
-  const fila = db.prepare(`SELECT COUNT(*) AS n FROM ${tabla}`).get() as {
-    n: number;
-  };
-  return fila.n === 0;
+interface ProductoSeed {
+  categoria: string;
+  nombre: string;
+  precio: number;
+  controla_stock: 0 | 1;
+  stock: number;
+  stock_minimo: number;
 }
 
+// Menú real del negocio. costo = 0 en todos: el admin lo completará.
+const CATEGORIAS: { nombre: string; orden: number }[] = [
+  { nombre: 'ESPECIALIDADES', orden: 1 },
+  { nombre: 'BEBIDAS', orden: 2 }
+];
+
+const PRODUCTOS: ProductoSeed[] = [
+  // ESPECIALIDADES (no controlan stock)
+  { categoria: 'ESPECIALIDADES', nombre: 'Pasteles', precio: 3000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  { categoria: 'ESPECIALIDADES', nombre: 'Empanadas carne y pollo', precio: 2000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  { categoria: 'ESPECIALIDADES', nombre: 'Papa carne y pollo', precio: 3000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  { categoria: 'ESPECIALIDADES', nombre: 'Papa mixta', precio: 3000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  { categoria: 'ESPECIALIDADES', nombre: 'Papa huevo entero', precio: 3000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  { categoria: 'ESPECIALIDADES', nombre: 'Arepa mixta', precio: 4000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  { categoria: 'ESPECIALIDADES', nombre: 'Marranitas', precio: 4000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  { categoria: 'ESPECIALIDADES', nombre: 'Flautas', precio: 4000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  { categoria: 'ESPECIALIDADES', nombre: 'Juan Valerios', precio: 3000, controla_stock: 0, stock: 0, stock_minimo: 0 },
+  // BEBIDAS (controlan stock). Stock inicial de arranque; el admin lo ajusta.
+  { categoria: 'BEBIDAS', nombre: 'Gaseosa mini plástica', precio: 2000, controla_stock: 1, stock: 24, stock_minimo: 6 },
+  { categoria: 'BEBIDAS', nombre: 'Gaseosa personal plástica', precio: 4000, controla_stock: 1, stock: 24, stock_minimo: 6 },
+  { categoria: 'BEBIDAS', nombre: 'Gaseosa personal 350 ml', precio: 3000, controla_stock: 1, stock: 24, stock_minimo: 6 },
+  { categoria: 'BEBIDAS', nombre: 'Gaseosa litro', precio: 5000, controla_stock: 1, stock: 12, stock_minimo: 3 },
+  { categoria: 'BEBIDAS', nombre: 'Gaseosa 1.5 L', precio: 7000, controla_stock: 1, stock: 12, stock_minimo: 3 },
+  { categoria: 'BEBIDAS', nombre: 'Gaseosa 2 L', precio: 12000, controla_stock: 1, stock: 12, stock_minimo: 3 },
+  { categoria: 'BEBIDAS', nombre: 'Agua personal', precio: 3000, controla_stock: 1, stock: 24, stock_minimo: 6 }
+];
+
+// Categorías del catálogo demo anterior, a desactivar si existen.
+const CATEGORIAS_DEMO = ['Hamburguesas', 'Perros y salchipapas', 'Bebidas'];
+
 const sembrar = db.transaction(() => {
-  // ── Usuarios ────────────────────────────────────────────────────────────
-  if (tablaVacia('usuarios')) {
-    const insUsuario = db.prepare(
-      'INSERT INTO usuarios (nombre, rol, pin_hash) VALUES (?, ?, ?)'
-    );
-    insUsuario.run('Administrador', 'admin', hashearPin('1234'));
-    insUsuario.run('Carolina', 'mesero', null);
-    insUsuario.run('Andrés', 'mesero', null);
-    console.log('Usuarios sembrados (admin PIN=1234, 2 meseros).');
-  } else {
-    console.log('usuarios ya tenía datos: no se toca.');
+  // ── Usuarios (idempotente por nombre) ───────────────────────────────────
+  const existeUsuario = db.prepare('SELECT 1 FROM usuarios WHERE nombre = ?');
+  const insUsuario = db.prepare(
+    'INSERT INTO usuarios (nombre, rol, pin_hash) VALUES (?, ?, ?)'
+  );
+  const usuarios: [string, 'admin' | 'auxiliar', string | null][] = [
+    ['Administrador', 'admin', hashearPin('1234')],
+    ['Carolina', 'auxiliar', null],
+    ['Andrés', 'auxiliar', null]
+  ];
+  let nuevosUsuarios = 0;
+  for (const [nombre, rol, pin] of usuarios) {
+    if (!existeUsuario.get(nombre)) {
+      insUsuario.run(nombre, rol, pin);
+      nuevosUsuarios++;
+    }
   }
+  console.log(`Usuarios: ${nuevosUsuarios} nuevo(s) (admin PIN=1234 si es primera vez).`);
 
-  // ── Categorías ──────────────────────────────────────────────────────────
-  if (tablaVacia('categorias')) {
-    const insCategoria = db.prepare(
-      'INSERT INTO categorias (nombre, orden) VALUES (?, ?)'
-    );
-    insCategoria.run('Hamburguesas', 1);
-    insCategoria.run('Perros y salchipapas', 2);
-    insCategoria.run('Bebidas', 3);
-    console.log('Categorías sembradas (3).');
-  } else {
-    console.log('categorias ya tenía datos: no se toca.');
-  }
-
-  // ── Productos ─────────────────────────────────────────────────────────────
-  if (tablaVacia('productos')) {
-    const idCategoria = (nombre: string): number => {
-      const fila = db
-        .prepare('SELECT id FROM categorias WHERE nombre = ?')
-        .get(nombre) as { id: number } | undefined;
-      if (!fila) throw new Error(`Falta la categoría "${nombre}" para el seed.`);
+  // ── Categorías reales (idempotente por nombre; reactiva si estaba oculta) ─
+  const idCategoria = (nombre: string): number => {
+    const fila = db.prepare('SELECT id FROM categorias WHERE nombre = ?').get(nombre) as
+      | { id: number }
+      | undefined;
+    if (fila) {
+      db.prepare('UPDATE categorias SET activo = 1, orden = ? WHERE id = ?').run(
+        CATEGORIAS.find((c) => c.nombre === nombre)!.orden,
+        fila.id
+      );
       return fila.id;
-    };
+    }
+    const orden = CATEGORIAS.find((c) => c.nombre === nombre)!.orden;
+    const info = db
+      .prepare('INSERT INTO categorias (nombre, orden) VALUES (?, ?)')
+      .run(nombre, orden);
+    return Number(info.lastInsertRowid);
+  };
+  const idsCategoria = new Map(CATEGORIAS.map((c) => [c.nombre, idCategoria(c.nombre)]));
 
-    const hamburguesas = idCategoria('Hamburguesas');
-    const perros = idCategoria('Perros y salchipapas');
-    const bebidas = idCategoria('Bebidas');
-
-    const insProducto = db.prepare(`
-      INSERT INTO productos
-        (categoria_id, nombre, precio, costo, controla_stock, stock, stock_minimo)
-      VALUES
-        (@categoria_id, @nombre, @precio, @costo, @controla_stock, @stock, @stock_minimo)
-    `);
-
-    // Precios y costos realistas en pesos colombianos (enteros, sin decimales).
-    const productos = [
-      { categoria_id: hamburguesas, nombre: 'Hamburguesa sencilla', precio: 12000, costo: 5000, controla_stock: 0, stock: 0, stock_minimo: 0 },
-      { categoria_id: hamburguesas, nombre: 'Hamburguesa doble carne', precio: 17000, costo: 7500, controla_stock: 0, stock: 0, stock_minimo: 0 },
-      { categoria_id: hamburguesas, nombre: 'Hamburguesa con pollo', precio: 15000, costo: 6500, controla_stock: 0, stock: 0, stock_minimo: 0 },
-      { categoria_id: perros, nombre: 'Perro caliente', precio: 8000, costo: 3000, controla_stock: 0, stock: 0, stock_minimo: 0 },
-      { categoria_id: perros, nombre: 'Perro especial', precio: 11000, costo: 4500, controla_stock: 0, stock: 0, stock_minimo: 0 },
-      { categoria_id: perros, nombre: 'Salchipapa mixta', precio: 18000, costo: 7000, controla_stock: 0, stock: 0, stock_minimo: 0 },
-      { categoria_id: bebidas, nombre: 'Gaseosa personal 400 ml', precio: 4000, costo: 1800, controla_stock: 1, stock: 48, stock_minimo: 12 },
-      { categoria_id: bebidas, nombre: 'Jugo natural en agua', precio: 5000, costo: 2000, controla_stock: 0, stock: 0, stock_minimo: 0 }
-    ];
-
-    for (const p of productos) insProducto.run(p);
-    console.log(`Productos sembrados (${productos.length}).`);
-  } else {
-    console.log('productos ya tenía datos: no se toca.');
+  // ── Productos reales (idempotente por nombre) ───────────────────────────
+  const existeProducto = db.prepare('SELECT 1 FROM productos WHERE nombre = ?');
+  const insProducto = db.prepare(`
+    INSERT INTO productos
+      (categoria_id, nombre, precio, costo, controla_stock, stock, stock_minimo)
+    VALUES
+      (@categoria_id, @nombre, @precio, 0, @controla_stock, @stock, @stock_minimo)
+  `);
+  let nuevosProductos = 0;
+  for (const p of PRODUCTOS) {
+    if (existeProducto.get(p.nombre)) continue;
+    insProducto.run({
+      categoria_id: idsCategoria.get(p.categoria)!,
+      nombre: p.nombre,
+      precio: p.precio,
+      controla_stock: p.controla_stock,
+      stock: p.stock,
+      stock_minimo: p.stock_minimo
+    });
+    nuevosProductos++;
   }
+  console.log(`Productos: ${nuevosProductos} nuevo(s) del catálogo real.`);
+
+  // ── Desactivar catálogo demo anterior (borrado lógico) ──────────────────
+  // Solo toca las categorías demo conocidas; nunca las reales.
+  let desactivados = 0;
+  for (const nombre of CATEGORIAS_DEMO) {
+    if (CATEGORIAS.some((c) => c.nombre === nombre)) continue; // por si acaso
+    const cat = db.prepare('SELECT id FROM categorias WHERE nombre = ?').get(nombre) as
+      | { id: number }
+      | undefined;
+    if (!cat) continue;
+    const r1 = db.prepare('UPDATE productos SET activo = 0 WHERE categoria_id = ? AND activo = 1').run(cat.id);
+    db.prepare('UPDATE categorias SET activo = 0 WHERE id = ?').run(cat.id);
+    desactivados += r1.changes;
+  }
+  if (desactivados > 0) console.log(`Catálogo demo desactivado: ${desactivados} producto(s).`);
 });
 
 sembrar();

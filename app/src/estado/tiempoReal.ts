@@ -5,7 +5,8 @@ import {
   type PedidoActualizadoPayload,
   type PedidoCanceladoPayload,
   type PedidoCobradoPayload,
-  type PedidoCreadoPayload
+  type PedidoCreadoPayload,
+  type ProductoActualizadoPayload
 } from '@pos/shared';
 import { socket } from '../lib/socket.js';
 import { calcularTotal, useStore } from './store.js';
@@ -16,7 +17,7 @@ export function iniciarTiempoReal(): void {
   if (registrado) return;
   registrado = true;
 
-  const { aplicarPedido, quitarPedidoLocal } = useStore.getState();
+  const { aplicarPedido, quitarPedidoLocal, aplicarProducto } = useStore.getState();
 
   const onCreadoOActualizado = (p: PedidoCreadoPayload | PedidoActualizadoPayload) => {
     aplicarPedido({ pedido: p.pedido, items: p.items, total: calcularTotal(p.items) });
@@ -26,4 +27,5 @@ export function iniciarTiempoReal(): void {
   socket.on(EVENTOS.PEDIDO_ACTUALIZADO, onCreadoOActualizado);
   socket.on(EVENTOS.PEDIDO_COBRADO, (p: PedidoCobradoPayload) => quitarPedidoLocal(p.pedidoId));
   socket.on(EVENTOS.PEDIDO_CANCELADO, (p: PedidoCanceladoPayload) => quitarPedidoLocal(p.pedidoId));
+  socket.on(EVENTOS.PRODUCTO_ACTUALIZADO, (p: ProductoActualizadoPayload) => aplicarProducto(p.producto));
 }

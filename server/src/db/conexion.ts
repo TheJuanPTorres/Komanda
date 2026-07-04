@@ -10,7 +10,7 @@ mkdirSync(dirname(config.rutaDb), { recursive: true });
 
 export const db: Database.Database = new Database(config.rutaDb);
 
-// WAL: mejor concurrencia lectura/escritura (varios meseros a la vez).
+// WAL: mejor concurrencia lectura/escritura (varios auxiliares a la vez).
 db.pragma('journal_mode = WAL');
 // Las claves foráneas NO están activas por defecto en SQLite: encenderlas.
 db.pragma('foreign_keys = ON');

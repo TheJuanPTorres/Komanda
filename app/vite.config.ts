@@ -45,6 +45,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': { target: 'http://localhost:3000', changeOrigin: true },
+      // Imágenes de producto (las sirve el servidor). En producción es mismo
+      // origen; en dev el proxy las trae desde el puerto del servidor.
+      '/imagenes': { target: 'http://localhost:3000', changeOrigin: true },
       '/socket.io': { target: 'http://localhost:3000', ws: true, changeOrigin: true }
     }
   }

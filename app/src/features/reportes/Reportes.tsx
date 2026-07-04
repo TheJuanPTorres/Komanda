@@ -143,12 +143,28 @@ export function Reportes() {
 }
 
 function TablaMargen({ margen }: { margen: ReporteMargen | null }) {
-  if (!margen || margen.productos.length === 0) {
-    return <div className="rep-vacio">No hubo ventas en este periodo.</div>;
+  if (!margen) return <div className="rep-vacio">Sin datos.</div>;
+  const aviso =
+    margen.productos_sin_costo > 0 ? (
+      <div className="rep-aviso">
+        {margen.productos_sin_costo} producto(s) sin costo asignado: el margen no es confiable hasta
+        completarlos.
+      </div>
+    ) : null;
+
+  if (margen.productos.length === 0) {
+    return (
+      <>
+        {aviso}
+        <div className="rep-vacio">No hubo ventas en este periodo.</div>
+      </>
+    );
   }
   const t = margen.totales;
   return (
-    <Tarjeta className="rep-tabla-cont">
+    <>
+      {aviso}
+      <Tarjeta className="rep-tabla-cont">
       <table className="rep-tabla">
         <thead>
           <tr>
@@ -183,7 +199,8 @@ function TablaMargen({ margen }: { margen: ReporteMargen | null }) {
           </tr>
         </tfoot>
       </table>
-    </Tarjeta>
+      </Tarjeta>
+    </>
   );
 }
 

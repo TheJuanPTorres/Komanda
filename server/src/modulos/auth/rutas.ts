@@ -13,8 +13,8 @@ const loginAdminSchema = z.object({
   pin: z.string().min(1, 'Escribe tu PIN.')
 });
 
-const loginMeseroSchema = z.object({
-  usuarioId: z.number().int().positive('Selecciona un mesero válido.')
+const loginAuxiliarSchema = z.object({
+  usuarioId: z.number().int().positive('Selecciona un auxiliar válido.')
 });
 
 // Opciones de la cookie de sesión, centralizadas para setear y borrar igual.
@@ -45,14 +45,14 @@ export async function rutasAuth(app: FastifyInstance): Promise<void> {
     return iniciarSesion(reply, sesion);
   });
 
-  // POST /api/auth/mesero — login de mesero por selección (sin PIN).
-  app.post('/api/auth/mesero', async (req, reply) => {
-    const { usuarioId } = loginMeseroSchema.parse(req.body);
+  // POST /api/auth/auxiliar — login de auxiliar por selección (sin PIN).
+  app.post('/api/auth/auxiliar', async (req, reply) => {
+    const { usuarioId } = loginAuxiliarSchema.parse(req.body);
     const usuario = buscarPorId(usuarioId);
-    if (!usuario || usuario.rol !== 'mesero' || usuario.activo !== 1) {
+    if (!usuario || usuario.rol !== 'auxiliar' || usuario.activo !== 1) {
       throw errores.usuarioInvalido();
     }
-    const sesion: Sesion = { id: usuario.id, nombre: usuario.nombre, rol: 'mesero' };
+    const sesion: Sesion = { id: usuario.id, nombre: usuario.nombre, rol: 'auxiliar' };
     return iniciarSesion(reply, sesion);
   });
 

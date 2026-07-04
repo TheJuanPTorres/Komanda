@@ -4,12 +4,43 @@
 //  - Barra: el servidor asigna turno secuencial del día (hora Bogotá).
 //  - Item repetido: se suma la cantidad en la línea existente.
 //  - Snapshot: al agregar se copia nombre/precio/costo del producto.
-//  - Quitar/reducir items: solo admin (se refuerza en las rutas).
+//  - Corregir items (reducir/quitar): auxiliar y admin, solo si está abierto.
+//  - Stock: si el producto lo controla, agregar descuenta y quitar/reducir
+//    devuelve al inventario (misma transacción). Los cambios de stock emiten
+//    producto:actualizado para refrescar el menú en vivo.
 import { db } from '../../db/conexion.js';
 import type { Pedido, PedidoConItems, PedidoItem } from '@pos/shared';
 import { errores } from '../../lib/errores.js';
 import { rangoDiaBogota } from '../../lib/fechas.js';
-import { obtenerProductoActivo } from '../productos/servicio.js';
+import { emisor } from '../../ws/emisor.js';
+import { obtenerProducto, obtenerProductoActivo } from '../productos/servicio.js';
+
+// Ajusta el stock de un producto (solo si lo controla). Devuelve true si cambió.
+// Debe llamarse DENTRO de una transacción; la emisión WS va después del commit.
+function ajustarStock(productoId: number, delta: number): boolean {
+  const info = db
+    .prepare(
+      "UPDATE productos SET stock = stock + ?, actualizado_en = datetime('now') WHERE id = ? AND controla_stock = 1"
+    )
+    .run(delta, productoId);
+  return info.changes > 0;
+}
+
+// Emite producto:actualizado para cada producto cuyo stock cambió.
+function emitirProductos(ids: Iterable<number>): void {
+  for (const id of new Set(ids)) {
+    const p = obtenerProducto(id);
+    if (p) emisor.productoActualizado({ producto: p });
+  }
+}
+
+// Exige que el pedido esté abierto para CORREGIRLO; si no, 403 (no editable).
+function exigirEditable(id: number): Pedido {
+  const pedido = obtenerPedido(id);
+  if (!pedido) throw errores.pedidoNoEncontrado();
+  if (pedido.estado !== 'abierto') throw errores.pedidoNoEditable();
+  return pedido;
+}
 
 interface FilaPedido {
   id: number;
@@ -18,7 +49,7 @@ interface FilaPedido {
   cliente_nombre: string | null;
   turno: number | null;
   estado: 'abierto' | 'cobrado' | 'cancelado';
-  mesero_id: number;
+  auxiliar_id: number;
   nota: string;
   creado_en: string;
   cerrado_en: string | null;
@@ -87,14 +118,14 @@ function exigirAbierto(id: number): Pedido {
  */
 export function abrirMesa(
   mesaNumero: number,
-  meseroId: number
+  auxiliarId: number
 ): { pedido: PedidoConItems; creado: boolean } {
   const abrir = db.transaction(() => {
     const existente = pedidoAbiertoEnMesa(mesaNumero);
     if (existente) return { id: existente.id, creado: false };
     const info = db
-      .prepare("INSERT INTO pedidos (tipo, mesa_numero, mesero_id) VALUES ('mesa', ?, ?)")
-      .run(mesaNumero, meseroId);
+      .prepare("INSERT INTO pedidos (tipo, mesa_numero, auxiliar_id) VALUES ('mesa', ?, ?)")
+      .run(mesaNumero, auxiliarId);
     return { id: Number(info.lastInsertRowid), creado: true };
   });
   const { id, creado } = abrir();
@@ -113,14 +144,14 @@ function siguienteTurnoBarra(): number {
 }
 
 /** Crea un pedido de barra con turno secuencial del día asignado por el servidor. */
-export function crearBarra(clienteNombre: string, meseroId: number): PedidoConItems {
+export function crearBarra(clienteNombre: string, auxiliarId: number): PedidoConItems {
   const crear = db.transaction(() => {
     const turno = siguienteTurnoBarra();
     const info = db
       .prepare(
-        "INSERT INTO pedidos (tipo, turno, cliente_nombre, mesero_id) VALUES ('barra', ?, ?, ?)"
+        "INSERT INTO pedidos (tipo, turno, cliente_nombre, auxiliar_id) VALUES ('barra', ?, ?, ?)"
       )
-      .run(turno, clienteNombre, meseroId);
+      .run(turno, clienteNombre, auxiliarId);
     return Number(info.lastInsertRowid);
   });
   return obtenerPedidoConItems(crear())!;
@@ -159,35 +190,73 @@ export function agregarItem(
          VALUES (?, ?, ?, ?, ?, ?, ?)`
       ).run(pedidoId, productoId, producto.nombre, producto.precio, producto.costo, cantidad, usuarioId);
     }
+    // Descuenta del inventario si el producto controla stock.
+    return ajustarStock(productoId, -cantidad) ? productoId : null;
   });
-  operar();
+  const afectado = operar();
+  if (afectado !== null) emitirProductos([afectado]);
   return obtenerPedidoConItems(pedidoId)!;
 }
 
-/** Cambia la cantidad de una línea (solo admin). Cantidad 0 no se permite (usar quitar). */
+/**
+ * Cambia la cantidad de una línea (auxiliar o admin; solo pedido abierto).
+ * Ajusta el stock por la diferencia. Cantidad 0 no se permite (usar quitar).
+ */
 export function cambiarCantidad(pedidoId: number, itemId: number, cantidad: number): PedidoConItems {
   const operar = db.transaction(() => {
-    exigirAbierto(pedidoId);
-    const info = db
-      .prepare('UPDATE pedido_items SET cantidad = ? WHERE id = ? AND pedido_id = ?')
-      .run(cantidad, itemId, pedidoId);
-    if (info.changes === 0) throw errores.itemNoEncontrado();
+    exigirEditable(pedidoId);
+    const item = db
+      .prepare('SELECT * FROM pedido_items WHERE id = ? AND pedido_id = ?')
+      .get(itemId, pedidoId) as FilaItem | undefined;
+    if (!item) throw errores.itemNoEncontrado();
+
+    db.prepare('UPDATE pedido_items SET cantidad = ? WHERE id = ?').run(cantidad, itemId);
+    // delta > 0 al subir (descuenta stock); delta < 0 al bajar (devuelve stock).
+    const delta = cantidad - item.cantidad;
+    return ajustarStock(item.producto_id, -delta) ? item.producto_id : null;
   });
-  operar();
+  const afectado = operar();
+  if (afectado !== null) emitirProductos([afectado]);
   return obtenerPedidoConItems(pedidoId)!;
 }
 
-/** Quita una línea del pedido (solo admin). */
-export function quitarItem(pedidoId: number, itemId: number): PedidoConItems {
-  const operar = db.transaction(() => {
-    exigirAbierto(pedidoId);
-    const info = db
-      .prepare('DELETE FROM pedido_items WHERE id = ? AND pedido_id = ?')
-      .run(itemId, pedidoId);
-    if (info.changes === 0) throw errores.itemNoEncontrado();
+/**
+ * Quita una línea del pedido (auxiliar o admin; solo pedido abierto). Devuelve
+ * el stock de esa línea al inventario. Si el pedido queda SIN items, se cancela
+ * automáticamente registrando quién lo dejó vacío. Devuelve el pedido y si se
+ * canceló.
+ */
+export function quitarItem(
+  pedidoId: number,
+  itemId: number,
+  usuarioId: number
+): { pedido: PedidoConItems; cancelado: boolean } {
+  const operar = db.transaction((): { afectado: number | null; cancelado: boolean } => {
+    exigirEditable(pedidoId);
+    const item = db
+      .prepare('SELECT * FROM pedido_items WHERE id = ? AND pedido_id = ?')
+      .get(itemId, pedidoId) as FilaItem | undefined;
+    if (!item) throw errores.itemNoEncontrado();
+
+    db.prepare('DELETE FROM pedido_items WHERE id = ?').run(itemId);
+    const afectado = ajustarStock(item.producto_id, item.cantidad) ? item.producto_id : null;
+
+    // ¿Quedó vacío? Entonces se cancela automáticamente.
+    const quedan = db
+      .prepare('SELECT COUNT(*) AS n FROM pedido_items WHERE pedido_id = ?')
+      .get(pedidoId) as { n: number };
+    let cancelado = false;
+    if (quedan.n === 0) {
+      db.prepare(
+        "UPDATE pedidos SET estado = 'cancelado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
+      ).run(usuarioId, pedidoId);
+      cancelado = true;
+    }
+    return { afectado, cancelado };
   });
-  operar();
-  return obtenerPedidoConItems(pedidoId)!;
+  const { afectado, cancelado } = operar();
+  if (afectado !== null) emitirProductos([afectado]);
+  return { pedido: obtenerPedidoConItems(pedidoId)!, cancelado };
 }
 
 /** Edita la nota del pedido. */
@@ -197,13 +266,21 @@ export function cambiarNota(pedidoId: number, nota: string): PedidoConItems {
   return obtenerPedidoConItems(pedidoId)!;
 }
 
-/** Cancela un pedido abierto (solo admin). */
+/** Cancela un pedido abierto (solo admin). Devuelve el stock de sus items. */
 export function cancelarPedido(pedidoId: number, adminId: number): void {
-  const operar = db.transaction(() => {
+  const operar = db.transaction((): number[] => {
     exigirAbierto(pedidoId);
+    const items = db
+      .prepare('SELECT producto_id, cantidad FROM pedido_items WHERE pedido_id = ?')
+      .all(pedidoId) as { producto_id: number; cantidad: number }[];
+    const afectados: number[] = [];
+    for (const it of items) {
+      if (ajustarStock(it.producto_id, it.cantidad)) afectados.push(it.producto_id);
+    }
     db.prepare(
       "UPDATE pedidos SET estado = 'cancelado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
     ).run(adminId, pedidoId);
+    return afectados;
   });
-  operar();
+  emitirProductos(operar());
 }

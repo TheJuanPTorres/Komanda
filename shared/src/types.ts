@@ -2,7 +2,7 @@
 // Regla de oro del proyecto: el DINERO siempre es un entero (pesos COP).
 // Las FECHAS son TEXT ISO 8601 en UTC tal como las guarda SQLite (datetime('now')).
 
-export type Rol = 'admin' | 'mesero';
+export type Rol = 'admin' | 'auxiliar';
 export type EstadoNotificacion = 'pendiente' | 'conciliado' | 'sin_pago';
 export type TipoPedido = 'mesa' | 'barra';
 export type EstadoPedido = 'abierto' | 'cobrado' | 'cancelado';
@@ -37,6 +37,8 @@ export interface Producto {
   stock: number;
   stock_minimo: number;
   activo: boolean;
+  // Ruta relativa de la foto (p. ej. "/imagenes/5.webp"), o null si no tiene.
+  imagen: string | null;
   creado_en: string;
   actualizado_en: string;
 }
@@ -48,7 +50,7 @@ export interface Pedido {
   cliente_nombre: string | null;
   turno: number | null;
   estado: EstadoPedido;
-  mesero_id: number;
+  auxiliar_id: number;
   nota: string;
   creado_en: string;
   cerrado_en: string | null;
@@ -121,7 +123,7 @@ export interface LoginAdminReq {
   pin: string;
 }
 
-export interface LoginMeseroReq {
+export interface LoginAuxiliarReq {
   usuarioId: number;
 }
 
@@ -268,6 +270,8 @@ export interface ReporteMargen {
   rango: RangoFechas;
   productos: MargenProducto[];
   totales: Omit<MargenProducto, 'producto_id' | 'nombre'>;
+  // Nº de productos activos con costo 0 (margen no confiable mientras > 0).
+  productos_sin_costo: number;
 }
 
 export interface VentasPorDia {

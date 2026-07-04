@@ -3,10 +3,12 @@ dist/
 *.log
 .DS_Store
 
-# Base de datos local (se genera con migraciones + seed)
+# Datos locales del negocio (se generan en ejecución): base, imágenes, respaldos
 server/data/*.db
 server/data/*.db-shm
 server/data/*.db-wal
+server/data/imagenes/
+server/data/respaldos/
 
 # Variables de entorno
 .env

@@ -1,0 +1,85 @@
+.prod-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+.prod {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2);
+  background: var(--superficie-1);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-l);
+}
+.prod__foto {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex: none;
+  border-radius: var(--radio-m);
+  overflow: hidden;
+  background: var(--coma-tenue);
+  display: grid;
+  place-items: center;
+}
+.prod__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.prod__inicial {
+  font-family: var(--fuente-display);
+  font-size: 32px;
+  color: var(--pare);
+  line-height: 1;
+}
+.prod__info {
+  flex: 1;
+  min-width: 0;
+}
+.prod__nombre {
+  font-family: var(--fuente-ui);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 14px;
+  color: var(--tinta-fuerte);
+  line-height: 1.15;
+}
+.prod__precio {
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--tinta-fuerte);
+  margin-top: 2px;
+}
+.prod__sincosto {
+  display: inline-block;
+  margin-top: var(--esp-1);
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radio-pill);
+  background: var(--coma);
+  color: var(--tinta-fuerte);
+}
+.prod__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  flex: none;
+}
+/* input file oculto, activado por el Boton */
+.prod__file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}

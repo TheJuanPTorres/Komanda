@@ -27,6 +27,10 @@ export const config = {
   // Ruta del archivo SQLite. Respaldar = copiar este archivo.
   rutaDb: process.env.POS_DB ?? resolve(RAIZ_SERVER, 'data', 'pos.db'),
 
+  // Carpeta de imágenes de producto (se sirve como estático en /imagenes).
+  // Vive junto a la DB para que el respaldo de server/data/ lo incluya.
+  rutaImagenes: resolve(dirname(process.env.POS_DB ?? resolve(RAIZ_SERVER, 'data', 'pos.db')), 'imagenes'),
+
   // Carpeta con los estáticos del front (app/dist) para servir en producción.
   rutaAppDist: resolve(RAIZ_SERVER, '..', 'app', 'dist'),
 

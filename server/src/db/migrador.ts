@@ -43,14 +43,23 @@ export function migrar(): string[] {
   asegurarTablaRegistro();
   const pendientes = migracionesPendientes();
 
-  for (const archivo of pendientes) {
-    const sql = readFileSync(join(CARPETA_MIGRACIONES, archivo), 'utf8');
-    const aplicar = db.transaction(() => {
-      db.exec(sql);
-      db.prepare('INSERT INTO _migraciones (nombre) VALUES (?)').run(archivo);
-    });
-    aplicar();
-    console.log(`Migración aplicada: ${archivo}`);
+  // Las claves foráneas se apagan durante las migraciones para permitir
+  // reconstruir tablas referenciadas (patrón oficial de SQLite: crear nueva,
+  // copiar, DROP, RENAME). Debe hacerse FUERA de una transacción. Se restauran
+  // al terminar. Cada migración corre igual dentro de su propia transacción.
+  db.pragma('foreign_keys = OFF');
+  try {
+    for (const archivo of pendientes) {
+      const sql = readFileSync(join(CARPETA_MIGRACIONES, archivo), 'utf8');
+      const aplicar = db.transaction(() => {
+        db.exec(sql);
+        db.prepare('INSERT INTO _migraciones (nombre) VALUES (?)').run(archivo);
+      });
+      aplicar();
+      console.log(`Migración aplicada: ${archivo}`);
+    }
+  } finally {
+    db.pragma('foreign_keys = ON');
   }
 
   if (pendientes.length === 0) {
