@@ -131,6 +131,24 @@ export interface LoginResp {
   usuario: Sesion;
 }
 
+// ── Administración de productos y auxiliares (admin) ─────────────────────
+
+// Crear o editar un producto. La foto se maneja por su propio endpoint.
+export interface GuardarProductoReq {
+  categoria_id: number;
+  nombre: string;
+  precio: number;
+  costo: number;
+  controla_stock: boolean;
+  stock: number;
+  stock_minimo: number;
+}
+
+// Crear o renombrar un auxiliar (sin PIN: entra por selección de nombre).
+export interface GuardarAuxiliarReq {
+  nombre: string;
+}
+
 export interface SaludResp {
   ok: true;
   version: string;

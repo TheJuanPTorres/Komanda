@@ -49,7 +49,9 @@ export const errores = {
   cajaYaCerrada: () =>
     new ErrorApp(409, 'CAJA_YA_CERRADA', 'La caja de hoy ya fue cerrada.'),
   imagenInvalida: (mensaje = 'La imagen no es válida.') =>
-    new ErrorApp(400, 'IMAGEN_INVALIDA', mensaje)
+    new ErrorApp(400, 'IMAGEN_INVALIDA', mensaje),
+  nombreEnUso: () =>
+    new ErrorApp(409, 'NOMBRE_EN_USO', 'Ya hay alguien con ese nombre. Usa uno diferente.')
 };
 
 export function responderError(

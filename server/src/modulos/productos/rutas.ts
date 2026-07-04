@@ -5,19 +5,35 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { z } from 'zod';
-import type { MenuAgrupado, Producto } from '@pos/shared';
+import type { Categoria, MenuAgrupado, Producto } from '@pos/shared';
 import { config } from '../../config.js';
 import { errores } from '../../lib/errores.js';
 import { requiereRol, requiereSesion } from '../auth/middleware.js';
 import { emisor } from '../../ws/emisor.js';
 import {
   actualizarImagenProducto,
+  actualizarProducto,
+  categoriaActiva,
+  crearProducto,
+  desactivarProducto,
+  listarCategorias,
   listarProductos,
   obtenerMenu,
   obtenerProducto
 } from './servicio.js';
 
 const idParam = z.object({ id: z.coerce.number().int().positive() });
+
+// Datos para crear/editar un producto.
+const guardarProductoSchema = z.object({
+  categoria_id: z.number().int().positive(),
+  nombre: z.string().trim().min(1, 'Escribe el nombre.').max(80),
+  precio: z.number().int().min(0, 'El precio no puede ser negativo.'),
+  costo: z.number().int().min(0, 'El costo no puede ser negativo.'),
+  controla_stock: z.boolean(),
+  stock: z.number().int().min(0),
+  stock_minimo: z.number().int().min(0)
+});
 
 // Tipos de imagen aceptados y tamaño máximo (5 MB).
 const TIPOS_OK = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -32,6 +48,40 @@ export async function rutasProductos(app: FastifyInstance): Promise<void> {
   // GET /api/productos — catálogo completo (admin).
   app.get('/api/productos', { preHandler: requiereRol('admin') }, async () => {
     return { productos: listarProductos() satisfies Producto[] };
+  });
+
+  // GET /api/categorias — categorías activas (admin, para el formulario).
+  app.get('/api/categorias', { preHandler: requiereRol('admin') }, async () => {
+    return { categorias: listarCategorias() satisfies Categoria[] };
+  });
+
+  // POST /api/productos — crear producto (admin).
+  app.post('/api/productos', { preHandler: requiereRol('admin') }, async (req, reply) => {
+    const datos = guardarProductoSchema.parse(req.body);
+    if (!categoriaActiva(datos.categoria_id)) throw errores.noEncontrado('Esa categoría no existe.');
+    const producto = crearProducto(datos);
+    emisor.productoActualizado({ producto });
+    return reply.status(201).send({ producto });
+  });
+
+  // PATCH /api/productos/:id — editar producto (admin).
+  app.patch('/api/productos/:id', { preHandler: requiereRol('admin') }, async (req) => {
+    const { id } = idParam.parse(req.params);
+    if (!obtenerProducto(id)) throw errores.noEncontrado('Ese producto no existe.');
+    const datos = guardarProductoSchema.parse(req.body);
+    if (!categoriaActiva(datos.categoria_id)) throw errores.noEncontrado('Esa categoría no existe.');
+    const producto = actualizarProducto(id, datos);
+    emisor.productoActualizado({ producto });
+    return { producto };
+  });
+
+  // DELETE /api/productos/:id — desactivar producto (admin, borrado lógico).
+  app.delete('/api/productos/:id', { preHandler: requiereRol('admin') }, async (req) => {
+    const { id } = idParam.parse(req.params);
+    if (!obtenerProducto(id)) throw errores.noEncontrado('Ese producto no existe.');
+    const producto = desactivarProducto(id);
+    emisor.productoActualizado({ producto });
+    return { producto };
   });
 
   // POST /api/productos/:id/imagen — subir/cambiar la foto (admin, multipart).

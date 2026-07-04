@@ -163,12 +163,17 @@ export const useStore = create<EstadoApp>((set, get) => ({
   },
 
   aplicarProducto: (producto) => {
-    // Reemplaza el producto dentro del menú agrupado (p. ej. cambió su foto).
-    set({
-      menu: get().menu.map((cat) => ({
-        ...cat,
-        productos: cat.productos.map((p) => (p.id === producto.id ? producto : p))
-      }))
+    // Mantiene el menú vivo ante cambios de producto (foto, precio, alta, baja).
+    // Un producto inactivo o de categoría desconocida se retira del menú; si es
+    // nuevo y activo, se agrega a su categoría; si ya está, se reemplaza.
+    const menu = get().menu.map((cat) => {
+      const sinEl = cat.productos.filter((p) => p.id !== producto.id);
+      const pertenece = producto.activo && producto.categoria_id === cat.id;
+      const productos = pertenece
+        ? [...sinEl, producto].sort((a, b) => a.nombre.localeCompare(b.nombre))
+        : sinEl;
+      return { ...cat, productos };
     });
+    set({ menu });
   }
 }));

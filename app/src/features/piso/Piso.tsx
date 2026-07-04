@@ -73,6 +73,9 @@ export function Piso() {
           <Boton variante="secundario" onClick={() => navegar('/productos')}>
             Productos
           </Boton>
+          <Boton variante="secundario" onClick={() => navegar('/auxiliares')}>
+            Auxiliares
+          </Boton>
           <Boton variante="secundario" onClick={() => navegar('/gastos')}>
             Gastos
           </Boton>

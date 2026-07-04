@@ -10,6 +10,7 @@ import { Gastos } from './features/gastos/Gastos.js';
 import { Cierre } from './features/cierre/Cierre.js';
 import { Reportes } from './features/reportes/Reportes.js';
 import { Productos } from './features/productos/Productos.js';
+import { Auxiliares } from './features/auxiliares/Auxiliares.js';
 import { Muestra } from './muestra/Muestra.js';
 
 function Protegida({ children, soloAdmin }: { children: ReactNode; soloAdmin?: boolean }) {
@@ -71,6 +72,14 @@ export function Rutas() {
           element={
             <Protegida soloAdmin>
               <Productos />
+            </Protegida>
+          }
+        />
+        <Route
+          path="/auxiliares"
+          element={
+            <Protegida soloAdmin>
+              <Auxiliares />
             </Protegida>
           }
         />

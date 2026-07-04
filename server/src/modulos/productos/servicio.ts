@@ -1,6 +1,12 @@
-// Acceso a datos de categorías y productos para el menú.
+// Acceso a datos de categorías y productos para el menú y su administración.
 import { db } from '../../db/conexion.js';
-import type { CategoriaConProductos, MenuAgrupado, Producto } from '@pos/shared';
+import type {
+  Categoria,
+  CategoriaConProductos,
+  GuardarProductoReq,
+  MenuAgrupado,
+  Producto
+} from '@pos/shared';
 
 interface FilaCategoria {
   id: number;
@@ -89,4 +95,72 @@ export function actualizarImagenProducto(id: number, imagen: string | null): voi
   db.prepare(
     "UPDATE productos SET imagen = ?, actualizado_en = datetime('now') WHERE id = ?"
   ).run(imagen, id);
+}
+
+// ── Categorías ─────────────────────────────────────────────────────────────
+
+/** Categorías activas (para el formulario de producto). */
+export function listarCategorias(): Categoria[] {
+  const filas = db
+    .prepare('SELECT * FROM categorias WHERE activo = 1 ORDER BY orden, nombre')
+    .all() as FilaCategoria[];
+  return filas.map((c) => ({ id: c.id, nombre: c.nombre, orden: c.orden, activo: c.activo === 1 }));
+}
+
+function categoriaExiste(id: number): boolean {
+  return db.prepare('SELECT 1 FROM categorias WHERE id = ? AND activo = 1').get(id) !== undefined;
+}
+
+// ── CRUD de productos (admin) ──────────────────────────────────────────────
+
+/** Crea un producto y devuelve el registro creado. */
+export function crearProducto(datos: GuardarProductoReq): Producto {
+  const info = db
+    .prepare(
+      `INSERT INTO productos
+         (categoria_id, nombre, precio, costo, controla_stock, stock, stock_minimo)
+       VALUES (@categoria_id, @nombre, @precio, @costo, @controla_stock, @stock, @stock_minimo)`
+    )
+    .run({
+      categoria_id: datos.categoria_id,
+      nombre: datos.nombre,
+      precio: datos.precio,
+      costo: datos.costo,
+      controla_stock: datos.controla_stock ? 1 : 0,
+      stock: datos.stock,
+      stock_minimo: datos.stock_minimo
+    });
+  return obtenerProducto(Number(info.lastInsertRowid))!;
+}
+
+/** Edita un producto existente (no toca la imagen). */
+export function actualizarProducto(id: number, datos: GuardarProductoReq): Producto {
+  db.prepare(
+    `UPDATE productos SET
+       categoria_id = @categoria_id, nombre = @nombre, precio = @precio, costo = @costo,
+       controla_stock = @controla_stock, stock = @stock, stock_minimo = @stock_minimo,
+       actualizado_en = datetime('now')
+     WHERE id = @id`
+  ).run({
+    id,
+    categoria_id: datos.categoria_id,
+    nombre: datos.nombre,
+    precio: datos.precio,
+    costo: datos.costo,
+    controla_stock: datos.controla_stock ? 1 : 0,
+    stock: datos.stock,
+    stock_minimo: datos.stock_minimo
+  });
+  return obtenerProducto(id)!;
+}
+
+/** Desactiva un producto (borrado lógico: activo = 0). Devuelve el registro. */
+export function desactivarProducto(id: number): Producto {
+  db.prepare("UPDATE productos SET activo = 0, actualizado_en = datetime('now') WHERE id = ?").run(id);
+  return obtenerProducto(id)!;
+}
+
+/** ¿Existe y está activa la categoría? (para validar en las rutas). */
+export function categoriaActiva(id: number): boolean {
+  return categoriaExiste(id);
 }
