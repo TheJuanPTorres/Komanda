@@ -1,0 +1,91 @@
+/* Preloader / splash de entrada. Placa nocturna, la palabra se revela letra por
+   letra (barrido de abajo hacia arriba) y luego la placa sube dejando ver la
+   app. Todo con transform (GPU) y el easing de la marca. */
+
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--superficie-nocturna);
+  display: grid;
+  place-items: center;
+  padding: var(--esp-4);
+  /* La salida: la placa entera se desliza hacia arriba, lento y fluido.
+     Curva con arranque suave (empieza despacio y acelera parejo). */
+  transform: translateY(0);
+  transition: transform 1.15s cubic-bezier(0.65, 0, 0.2, 1);
+  will-change: transform;
+}
+.preloader--saliendo {
+  transform: translateY(-101%);
+}
+
+.preloader__centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+/* La palabra: cada letra vive dentro de una máscara (overflow hidden) y sube
+   desde abajo. El desfase por letra crea el barrido. */
+.preloader__palabra {
+  display: flex;
+  align-items: flex-end;
+}
+.preloader__mascara {
+  display: inline-block;
+  overflow: hidden;
+  /* Espacio para que no se recorten los bordes del glifo al entrar/salir. */
+  padding: 0.08em 0 0.02em;
+}
+.preloader__letra {
+  display: inline-block;
+  font-family: var(--fuente-display);
+  color: var(--tinta-sobre-nocturno);
+  font-size: clamp(2.25rem, 11vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  transform: translateY(115%);
+  animation: preloaderSubeLetra 0.72s var(--curva) forwards;
+}
+@keyframes preloaderSubeLetra {
+  from {
+    transform: translateY(115%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Remate premium: una línea fina en amarillo que se dibuja bajo la palabra. */
+.preloader__linea {
+  width: min(46vw, 180px);
+  height: 3px;
+  border-radius: var(--radio-pill);
+  background: var(--coma);
+  transform: scaleX(0);
+  transform-origin: center;
+  animation: preloaderLinea 0.55s var(--curva) forwards;
+}
+@keyframes preloaderLinea {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* El splash es una intro de marca INTENCIONAL: debe reproducirse aunque el
+   sistema pida menos movimiento. tokens.css tiene una regla global que anula
+   todas las duraciones bajo prefers-reduced-motion; aquí se reafirman las del
+   splash (mayor especificidad que el selector universal, así que ganan). */
+@media (prefers-reduced-motion: reduce) {
+  .preloader {
+    transition-duration: 1.15s !important;
+  }
+  .preloader__letra {
+    animation-duration: 0.72s !important;
+  }
+  .preloader__linea {
+    animation-duration: 0.55s !important;
+  }
+}
