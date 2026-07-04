@@ -14,6 +14,12 @@ import { errores } from '../../lib/errores.js';
 import { rangoDiaBogota } from '../../lib/fechas.js';
 import { emisor } from '../../ws/emisor.js';
 import { obtenerProducto, obtenerProductoActivo } from '../productos/servicio.js';
+import { registrarEvento } from './eventos.js';
+
+// Total (entero COP) de una lista de items del pedido.
+function totalItems(items: { precio_unitario: number; cantidad: number }[]): number {
+  return items.reduce((acc, it) => acc + it.precio_unitario * it.cantidad, 0);
+}
 
 // Ajusta el stock de un producto (solo si lo controla). Devuelve true si cambió.
 // Debe llamarse DENTRO de una transacción; la emisión WS va después del commit.
@@ -126,7 +132,14 @@ export function abrirMesa(
     const info = db
       .prepare("INSERT INTO pedidos (tipo, mesa_numero, auxiliar_id) VALUES ('mesa', ?, ?)")
       .run(mesaNumero, auxiliarId);
-    return { id: Number(info.lastInsertRowid), creado: true };
+    const id = Number(info.lastInsertRowid);
+    registrarEvento({
+      pedidoId: id,
+      usuarioId: auxiliarId,
+      tipo: 'creado',
+      detalle: { tipo_pedido: 'mesa', mesa_numero: mesaNumero, items_iniciales: [] }
+    });
+    return { id, creado: true };
   });
   const { id, creado } = abrir();
   return { pedido: obtenerPedidoConItems(id)!, creado };
@@ -152,7 +165,14 @@ export function crearBarra(clienteNombre: string, auxiliarId: number): PedidoCon
         "INSERT INTO pedidos (tipo, turno, cliente_nombre, auxiliar_id) VALUES ('barra', ?, ?, ?)"
       )
       .run(turno, clienteNombre, auxiliarId);
-    return Number(info.lastInsertRowid);
+    const id = Number(info.lastInsertRowid);
+    registrarEvento({
+      pedidoId: id,
+      usuarioId: auxiliarId,
+      tipo: 'creado',
+      detalle: { tipo_pedido: 'barra', cliente_nombre: clienteNombre, turno, items_iniciales: [] }
+    });
+    return id;
   });
   return obtenerPedidoConItems(crear())!;
 }
@@ -191,7 +211,19 @@ export function agregarItem(
       ).run(pedidoId, productoId, producto.nombre, producto.precio, producto.costo, cantidad, usuarioId);
     }
     // Descuenta del inventario si el producto controla stock.
-    return ajustarStock(productoId, -cantidad) ? productoId : null;
+    const afectado = ajustarStock(productoId, -cantidad) ? productoId : null;
+    registrarEvento({
+      pedidoId,
+      usuarioId,
+      tipo: 'item_agregado',
+      detalle: {
+        producto_id: productoId,
+        nombre: producto.nombre,
+        cantidad,
+        precio_unitario: producto.precio
+      }
+    });
+    return afectado;
   });
   const afectado = operar();
   if (afectado !== null) emitirProductos([afectado]);
@@ -202,7 +234,12 @@ export function agregarItem(
  * Cambia la cantidad de una línea (auxiliar o admin; solo pedido abierto).
  * Ajusta el stock por la diferencia. Cantidad 0 no se permite (usar quitar).
  */
-export function cambiarCantidad(pedidoId: number, itemId: number, cantidad: number): PedidoConItems {
+export function cambiarCantidad(
+  pedidoId: number,
+  itemId: number,
+  cantidad: number,
+  usuarioId: number
+): PedidoConItems {
   const operar = db.transaction(() => {
     exigirEditable(pedidoId);
     const item = db
@@ -210,10 +247,43 @@ export function cambiarCantidad(pedidoId: number, itemId: number, cantidad: numb
       .get(itemId, pedidoId) as FilaItem | undefined;
     if (!item) throw errores.itemNoEncontrado();
 
+    const antes = item.cantidad;
+    if (cantidad === antes) return null; // sin cambio, sin evento
     db.prepare('UPDATE pedido_items SET cantidad = ? WHERE id = ?').run(cantidad, itemId);
     // delta > 0 al subir (descuenta stock); delta < 0 al bajar (devuelve stock).
-    const delta = cantidad - item.cantidad;
-    return ajustarStock(item.producto_id, -delta) ? item.producto_id : null;
+    const delta = cantidad - antes;
+    const ajusto = ajustarStock(item.producto_id, -delta);
+    const afectado = ajusto ? item.producto_id : null;
+
+    if (cantidad < antes) {
+      registrarEvento({
+        pedidoId,
+        usuarioId,
+        tipo: 'item_reducido',
+        detalle: {
+          producto_id: item.producto_id,
+          nombre: item.nombre_producto,
+          cantidad_antes: antes,
+          cantidad_despues: cantidad,
+          stock_devuelto: ajusto ? antes - cantidad : 0
+        }
+      });
+    } else {
+      // Subir por PATCH (la UI no lo hace, pero el endpoint lo permite): se
+      // registra como agregado para no falsear la bitácora.
+      registrarEvento({
+        pedidoId,
+        usuarioId,
+        tipo: 'item_agregado',
+        detalle: {
+          producto_id: item.producto_id,
+          nombre: item.nombre_producto,
+          cantidad: cantidad - antes,
+          precio_unitario: item.precio_unitario
+        }
+      });
+    }
+    return afectado;
   });
   const afectado = operar();
   if (afectado !== null) emitirProductos([afectado]);
@@ -239,9 +309,23 @@ export function quitarItem(
     if (!item) throw errores.itemNoEncontrado();
 
     db.prepare('DELETE FROM pedido_items WHERE id = ?').run(itemId);
-    const afectado = ajustarStock(item.producto_id, item.cantidad) ? item.producto_id : null;
+    const ajusto = ajustarStock(item.producto_id, item.cantidad);
+    const afectado = ajusto ? item.producto_id : null;
 
-    // ¿Quedó vacío? Entonces se cancela automáticamente.
+    registrarEvento({
+      pedidoId,
+      usuarioId,
+      tipo: 'item_eliminado',
+      detalle: {
+        producto_id: item.producto_id,
+        nombre: item.nombre_producto,
+        cantidad_eliminada: item.cantidad,
+        monto_eliminado: item.precio_unitario * item.cantidad,
+        stock_devuelto: ajusto ? item.cantidad : 0
+      }
+    });
+
+    // ¿Quedó vacío? Entonces se cancela automáticamente (mismo transacción).
     const quedan = db
       .prepare('SELECT COUNT(*) AS n FROM pedido_items WHERE pedido_id = ?')
       .get(pedidoId) as { n: number };
@@ -250,6 +334,12 @@ export function quitarItem(
       db.prepare(
         "UPDATE pedidos SET estado = 'cancelado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
       ).run(usuarioId, pedidoId);
+      registrarEvento({
+        pedidoId,
+        usuarioId,
+        tipo: 'cancelado',
+        detalle: { motivo: 'quedo_vacio', total_al_cancelar: 0 }
+      });
       cancelado = true;
     }
     return { afectado, cancelado };
@@ -260,9 +350,20 @@ export function quitarItem(
 }
 
 /** Edita la nota del pedido. */
-export function cambiarNota(pedidoId: number, nota: string): PedidoConItems {
-  exigirAbierto(pedidoId);
-  db.prepare('UPDATE pedidos SET nota = ? WHERE id = ?').run(nota, pedidoId);
+export function cambiarNota(pedidoId: number, nota: string, usuarioId: number): PedidoConItems {
+  const operar = db.transaction(() => {
+    const pedido = exigirAbierto(pedidoId);
+    const notaAntes = pedido.nota;
+    if (nota === notaAntes) return; // sin cambio, sin evento
+    db.prepare('UPDATE pedidos SET nota = ? WHERE id = ?').run(nota, pedidoId);
+    registrarEvento({
+      pedidoId,
+      usuarioId,
+      tipo: 'nota_editada',
+      detalle: { nota_antes: notaAntes, nota_despues: nota }
+    });
+  });
+  operar();
   return obtenerPedidoConItems(pedidoId)!;
 }
 
@@ -271,8 +372,8 @@ export function cancelarPedido(pedidoId: number, adminId: number): void {
   const operar = db.transaction((): number[] => {
     exigirAbierto(pedidoId);
     const items = db
-      .prepare('SELECT producto_id, cantidad FROM pedido_items WHERE pedido_id = ?')
-      .all(pedidoId) as { producto_id: number; cantidad: number }[];
+      .prepare('SELECT producto_id, cantidad, precio_unitario FROM pedido_items WHERE pedido_id = ?')
+      .all(pedidoId) as { producto_id: number; cantidad: number; precio_unitario: number }[];
     const afectados: number[] = [];
     for (const it of items) {
       if (ajustarStock(it.producto_id, it.cantidad)) afectados.push(it.producto_id);
@@ -280,6 +381,12 @@ export function cancelarPedido(pedidoId: number, adminId: number): void {
     db.prepare(
       "UPDATE pedidos SET estado = 'cancelado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
     ).run(adminId, pedidoId);
+    registrarEvento({
+      pedidoId,
+      usuarioId: adminId,
+      tipo: 'cancelado',
+      detalle: { motivo: 'manual', total_al_cancelar: totalItems(items) }
+    });
     return afectados;
   });
   emitirProductos(operar());

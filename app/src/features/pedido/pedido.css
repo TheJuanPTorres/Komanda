@@ -68,6 +68,73 @@
   flex-direction: column;
   gap: var(--esp-3);
 }
+
+/* ── Historial (bitácora del pedido) ───────────────────────────────────── */
+.hist {
+  margin-top: var(--esp-3);
+  border-top: 1px solid var(--linea);
+  padding-top: var(--esp-2);
+}
+.hist__toggle {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 var(--esp-1);
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 12px;
+  color: var(--tinta-media);
+}
+.hist__chevron {
+  transition: transform var(--dur-media) var(--curva);
+}
+.hist__chevron--abierto {
+  transform: rotate(180deg);
+}
+.hist__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-1) var(--esp-1);
+}
+.hist__ev {
+  display: flex;
+  gap: var(--esp-3);
+  align-items: baseline;
+}
+.hist__hora {
+  flex: none;
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--tinta-suave);
+}
+.hist__desc {
+  font-family: var(--fuente-ui);
+  font-size: 14px;
+  color: var(--tinta-fuerte);
+  line-height: 1.3;
+}
+/* Correcciones (bajar/quitar): se resaltan con el amarillo de la marca. */
+.hist__ev--correccion .hist__desc {
+  color: var(--tinta-fuerte);
+  border-left: 3px solid var(--coma);
+  padding-left: var(--esp-2);
+  margin-left: calc(-1 * var(--esp-2) + 3px);
+}
+.hist__vacio {
+  font-family: var(--fuente-ui);
+  font-size: 13px;
+  color: var(--tinta-media);
+  margin: 0;
+}
 .pedido__salida {
   min-height: 100dvh;
   display: grid;

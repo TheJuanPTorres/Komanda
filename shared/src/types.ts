@@ -358,3 +358,89 @@ export interface ReporteConciliacion {
   // Pagos QR sin un correo que los respalde.
   pagos_sin_conciliar: PagoSinConciliar[];
 }
+
+// ── Bitácora de eventos de pedido (v1.5, Etapa A) ────────────────────────
+// Tabla inmutable pedido_eventos: cada mutación de un pedido escribe un evento.
+// El campo `detalle` es un JSON cuyo contenido depende del `tipo` (unión
+// discriminada más abajo). Los montos son enteros COP; `nombre` es snapshot
+// del momento (no se resuelve luego con join).
+
+export type TipoEventoPedido =
+  | 'creado'
+  | 'item_agregado'
+  | 'item_reducido'
+  | 'item_eliminado'
+  | 'nota_editada'
+  | 'cancelado'
+  | 'cobrado';
+
+export interface DetalleCreado {
+  tipo_pedido: TipoPedido;
+  mesa_numero?: number;
+  cliente_nombre?: string;
+  turno?: number;
+  items_iniciales: {
+    producto_id: number;
+    nombre: string;
+    cantidad: number;
+    precio_unitario: number;
+  }[];
+}
+
+export interface DetalleItemAgregado {
+  producto_id: number;
+  nombre: string;
+  cantidad: number;
+  precio_unitario: number;
+}
+
+export interface DetalleItemReducido {
+  producto_id: number;
+  nombre: string;
+  cantidad_antes: number;
+  cantidad_despues: number;
+  stock_devuelto: number;
+}
+
+export interface DetalleItemEliminado {
+  producto_id: number;
+  nombre: string;
+  cantidad_eliminada: number;
+  monto_eliminado: number;
+  stock_devuelto: number;
+}
+
+export interface DetalleNotaEditada {
+  nota_antes: string;
+  nota_despues: string;
+}
+
+export interface DetalleCancelado {
+  motivo: 'manual' | 'quedo_vacio';
+  total_al_cancelar: number;
+}
+
+export interface DetalleCobrado {
+  total: number;
+  pagos: { metodo: MetodoPago; monto: number }[];
+}
+
+// Unión discriminada por `tipo`: al estrechar por tipo, `detalle` queda tipado.
+export type EventoContenido =
+  | { tipo: 'creado'; detalle: DetalleCreado }
+  | { tipo: 'item_agregado'; detalle: DetalleItemAgregado }
+  | { tipo: 'item_reducido'; detalle: DetalleItemReducido }
+  | { tipo: 'item_eliminado'; detalle: DetalleItemEliminado }
+  | { tipo: 'nota_editada'; detalle: DetalleNotaEditada }
+  | { tipo: 'cancelado'; detalle: DetalleCancelado }
+  | { tipo: 'cobrado'; detalle: DetalleCobrado };
+
+// Un evento tal como lo devuelve la API: contenido + metadatos + nombre de
+// usuario ya resuelto (para la línea de tiempo).
+export type EventoPedido = EventoContenido & {
+  id: number;
+  pedido_id: number;
+  usuario_id: number;
+  usuario_nombre: string;
+  creado_en: string;
+};

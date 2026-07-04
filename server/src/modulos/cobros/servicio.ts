@@ -4,6 +4,7 @@ import { db } from '../../db/conexion.js';
 import type { Pago, PagoReq } from '@pos/shared';
 import { errores } from '../../lib/errores.js';
 import { obtenerPedidoConItems } from '../pedidos/servicio.js';
+import { registrarEvento } from '../pedidos/eventos.js';
 
 export interface ResultadoCobro {
   pedidoId: number;
@@ -42,6 +43,16 @@ export function registrarCobro(
     db.prepare(
       "UPDATE pedidos SET estado = 'cobrado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
     ).run(adminId, pedidoId);
+
+    registrarEvento({
+      pedidoId,
+      usuarioId: adminId,
+      tipo: 'cobrado',
+      detalle: {
+        total: actual.total,
+        pagos: pagos.map((p) => ({ metodo: p.metodo, monto: p.monto }))
+      }
+    });
 
     const pedido = obtenerPedidoConItems(pedidoId)!;
     const filasPago = db

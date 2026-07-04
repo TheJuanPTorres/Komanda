@@ -40,6 +40,10 @@ en el servidor (middleware de rol en el módulo cobros), nunca solo en la UI.
   mensajes escritos para humanos no técnicos.
 - WEBSOCKETS: todo cambio de estado de pedidos/productos emite evento
   tipado definido en shared/src/eventos.ts. El front nunca hace polling.
+- BITÁCORA: toda mutación de pedidos registra su evento en pedido_eventos vía
+  registrarEvento(), dentro de la misma transacción que la acción. La tabla es
+  solo-inserción: prohibido crear endpoints o queries de UPDATE/DELETE sobre
+  ella. La historia de un pedido se reconstruye leyendo sus eventos en orden.
 
 ## Estructura
 shared/src/{types.ts, eventos.ts}

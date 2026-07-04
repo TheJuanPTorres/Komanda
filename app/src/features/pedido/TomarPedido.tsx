@@ -19,6 +19,7 @@ import {
 import { Encabezado } from '../comunes/Encabezado.js';
 import { Cargando } from '../comunes/Cargando.js';
 import { CobroModal } from '../cobro/CobroModal.js';
+import { HistorialPedido } from './HistorialPedido.js';
 import './pedido.css';
 
 export function TomarPedido() {
@@ -159,6 +160,8 @@ export function TomarPedido() {
                 />
               ))
             )}
+
+            <HistorialPedido pedidoId={p.id} revision={items.length * 100000 + total} />
           </div>
 
           <div className="pedido__pie">

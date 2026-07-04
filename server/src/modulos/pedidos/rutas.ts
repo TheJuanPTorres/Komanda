@@ -8,10 +8,11 @@
 //  - Cobrar y cancelar: SOLO admin (regla sagrada, reforzada en el servidor).
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import type { PedidoConItems } from '@pos/shared';
+import type { EventoPedido, PedidoConItems } from '@pos/shared';
 import { errores } from '../../lib/errores.js';
 import { requiereRol, requiereSesion } from '../auth/middleware.js';
 import { emisor } from '../../ws/emisor.js';
+import { listarEventos } from './eventos.js';
 import {
   abrirMesa,
   agregarItem,
@@ -64,6 +65,19 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
     return { pedido };
   });
 
+  // GET /api/pedidos/:id/eventos — bitácora del pedido en orden cronológico.
+  // Permisos: el admin ve todo; el auxiliar solo pedidos ABIERTOS (la historia
+  // de ventas cerradas es del explorador del admin, Etapa B).
+  app.get('/api/pedidos/:id/eventos', { preHandler: requiereSesion }, async (req) => {
+    const { id } = idParam.parse(req.params);
+    const pedido = obtenerPedidoConItems(id);
+    if (!pedido) throw errores.pedidoNoEncontrado();
+    if (req.user.rol !== 'admin' && pedido.pedido.estado !== 'abierto') {
+      throw errores.sinPermiso();
+    }
+    return { eventos: listarEventos(id) satisfies EventoPedido[] };
+  });
+
   // POST /api/pedidos — abrir mesa (crea o recupera) o crear pedido de barra.
   app.post('/api/pedidos', { preHandler: requiereSesion }, async (req, reply) => {
     const datos = crearPedidoSchema.parse(req.body);
@@ -92,7 +106,7 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
   app.patch('/api/pedidos/:id/items/:itemId', { preHandler: requiereSesion }, async (req) => {
     const { id, itemId } = itemParams.parse(req.params);
     const { cantidad } = cambiarCantidadSchema.parse(req.body);
-    const pedido = cambiarCantidad(id, itemId, cantidad);
+    const pedido = cambiarCantidad(id, itemId, cantidad, req.user.id);
     emitirActualizado(pedido);
     return { pedido };
   });
@@ -111,7 +125,7 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
   app.patch('/api/pedidos/:id/nota', { preHandler: requiereSesion }, async (req) => {
     const { id } = idParam.parse(req.params);
     const { nota } = cambiarNotaSchema.parse(req.body);
-    const pedido = cambiarNota(id, nota);
+    const pedido = cambiarNota(id, nota, req.user.id);
     emitirActualizado(pedido);
     return { pedido };
   });
