@@ -62,8 +62,15 @@
   border-top: 1px solid var(--linea);
 }
 .pedido__pie {
+  /* Siempre visible: se ancla al fondo de la cuenta para no tener que
+     scrollear hasta abajo para cobrar. */
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   padding: var(--esp-4);
-  border-top: 1px solid var(--linea);
+  border-top: 2px solid var(--linea-fuerte);
+  background: var(--superficie-1);
+  box-shadow: 0 -6px 16px -12px rgba(21, 17, 10, 0.5);
   display: flex;
   flex-direction: column;
   gap: var(--esp-3);

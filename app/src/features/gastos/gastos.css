@@ -1,3 +1,26 @@
+/* En PC: formulario a la izquierda, historial a la derecha. En móvil se apilan. */
+.gasto-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--esp-4);
+}
+@media (min-width: 860px) {
+  .gasto-2col {
+    grid-template-columns: minmax(320px, 380px) 1fr;
+    align-items: start;
+  }
+  /* El formulario queda a la vista mientras se recorre el historial. */
+  .gasto-2col .gasto-form {
+    position: sticky;
+    top: calc(var(--esp-4) + 64px);
+  }
+}
+.gasto-historial {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  min-width: 0;
+}
 .gasto-form {
   padding: var(--esp-4);
   display: flex;

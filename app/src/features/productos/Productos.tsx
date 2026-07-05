@@ -8,6 +8,7 @@ import { api, ErrorApi } from '../../lib/api.js';
 import { formatearDinero } from '../../design-system/index.js';
 import { Boton, Modal } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
+import { NavAdmin } from '../comunes/NavAdmin.js';
 import { Cargando } from '../comunes/Cargando.js';
 import { EditorProducto } from './EditorProducto.js';
 import './productos.css';
@@ -76,10 +77,13 @@ export function Productos() {
         subtitulo="Catálogo del negocio"
         onVolver={() => navegar('/')}
         acciones={
-          <Boton onClick={() => setEditando('nuevo')}>
-            <Plus size={20} strokeWidth={2.25} />
-            Nuevo
-          </Boton>
+          <>
+            <Boton onClick={() => setEditando('nuevo')}>
+              <Plus size={20} strokeWidth={2.25} />
+              Nuevo
+            </Boton>
+            <NavAdmin />
+          </>
         }
       />
 

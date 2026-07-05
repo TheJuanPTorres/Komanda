@@ -9,10 +9,14 @@ import { Cargando } from './features/comunes/Cargando.js';
 import { Preloader } from './features/preloader/Preloader.js';
 import { ActualizacionPWA } from './pwa/ActualizacionPWA.js';
 
+// El splash es una intro de arranque: se muestra una vez por sesión del
+// navegador (no en cada recarga), para que no resulte hostigante al trabajar.
+const CLAVE_SPLASH = 'komanda_splash_visto';
+
 export function App() {
   const cargarSesion = useStore((s) => s.cargarSesion);
   const cargandoSesion = useStore((s) => s.cargandoSesion);
-  const [splash, setSplash] = useState(true);
+  const [splash, setSplash] = useState(() => !sessionStorage.getItem(CLAVE_SPLASH));
 
   useEffect(() => {
     iniciarTiempoReal();
@@ -30,7 +34,14 @@ export function App() {
           <ActualizacionPWA />
         </>
       )}
-      {splash && <Preloader onListo={() => setSplash(false)} />}
+      {splash && (
+        <Preloader
+          onListo={() => {
+            sessionStorage.setItem(CLAVE_SPLASH, '1');
+            setSplash(false);
+          }}
+        />
+      )}
     </>
   );
 }

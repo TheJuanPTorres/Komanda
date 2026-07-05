@@ -105,7 +105,11 @@ export function EditorProducto({ categorias, producto, onCerrar, onGuardado }: P
   const fotoMostrada = vistaPrevia ?? imagenUrl;
 
   return (
-    <Modal titulo={editando ? 'Editar producto' : 'Nuevo producto'} onCerrar={() => !ocupado && onCerrar()}>
+    <Modal
+      titulo={editando ? 'Editar producto' : 'Nuevo producto'}
+      className="ds-modal--ancho"
+      onCerrar={() => !ocupado && onCerrar()}
+    >
       <div className="pedit">
         {error && <div className="aviso-error">{error}</div>}
 

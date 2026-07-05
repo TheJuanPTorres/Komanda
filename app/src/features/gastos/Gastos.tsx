@@ -8,6 +8,7 @@ import { aEnteroDesdeTexto } from '../../lib/numeros.js';
 import { ETIQUETA_CATEGORIA_GASTO, etiquetaMetodo } from '../../lib/etiquetas.js';
 import { Boton, Campo, Chip, Tarjeta, formatearDinero } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
+import { NavAdmin } from '../comunes/NavAdmin.js';
 import { Cargando } from '../comunes/Cargando.js';
 import './gastos.css';
 
@@ -66,11 +67,17 @@ export function Gastos() {
 
   return (
     <div className="pagina">
-      <Encabezado titulo="Gastos de hoy" subtitulo="Salidas de dinero del día" onVolver={() => navegar('/')} />
+      <Encabezado
+        titulo="Gastos de hoy"
+        subtitulo="Salidas de dinero del día"
+        onVolver={() => navegar('/')}
+        acciones={<NavAdmin />}
+      />
 
-      <div className="pagina__cuerpo">
+      <div className="pagina__cuerpo pagina__cuerpo--ancho">
         {error && <div className="aviso-error">{error}</div>}
 
+        <div className="gasto-2col">
         <Tarjeta className="gasto-form">
           <Campo
             etiqueta="Concepto"
@@ -122,7 +129,7 @@ export function Gastos() {
           </Boton>
         </Tarjeta>
 
-        <section>
+        <section className="gasto-historial">
           <h2 className="seccion-titulo">Registrados hoy</h2>
           {gastos.length === 0 ? (
             <p className="vacio">
@@ -157,6 +164,7 @@ export function Gastos() {
             </>
           )}
         </section>
+        </div>
       </div>
     </div>
   );

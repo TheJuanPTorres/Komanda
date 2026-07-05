@@ -7,6 +7,7 @@ import type { Usuario } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
 import { Boton, Campo, Modal } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
+import { NavAdmin } from '../comunes/NavAdmin.js';
 import { Cargando } from '../comunes/Cargando.js';
 import './auxiliares.css';
 
@@ -113,10 +114,13 @@ export function Auxiliares() {
         subtitulo="Quién toma pedidos"
         onVolver={() => navegar('/')}
         acciones={
-          <Boton onClick={() => setEditando('nuevo')}>
-            <Plus size={20} strokeWidth={2.25} />
-            Nuevo
-          </Boton>
+          <>
+            <Boton onClick={() => setEditando('nuevo')}>
+              <Plus size={20} strokeWidth={2.25} />
+              Nuevo
+            </Boton>
+            <NavAdmin />
+          </>
         }
       />
 

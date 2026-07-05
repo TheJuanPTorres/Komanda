@@ -188,6 +188,12 @@
   /* Formularios altos: la placa hace scroll interno en pantallas pequeñas */
   max-height: 92dvh;
   overflow-y: auto;
+  /* Nunca scroll horizontal dentro del modal. */
+  overflow-x: hidden;
+}
+/* Placa más ancha para formularios con dos columnas (p. ej. editar producto). */
+.ds-modal--ancho {
+  max-width: 560px;
 }
 .ds-modal__titulo {
   margin: 0;

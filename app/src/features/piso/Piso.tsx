@@ -8,6 +8,7 @@ import { turnoBarra } from '../../lib/etiquetas.js';
 import { ErrorApi } from '../../lib/api.js';
 import { Boton, Campo, Modal, TarjetaMesa } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
+import { NavAdmin } from '../comunes/NavAdmin.js';
 import './piso.css';
 
 const MESAS = [1, 2, 3, 4];
@@ -20,7 +21,6 @@ export function Piso() {
   const cargarPedidos = useStore((s) => s.cargarPedidos);
   const abrirMesa = useStore((s) => s.abrirMesa);
   const crearBarra = useStore((s) => s.crearBarra);
-  const salir = useStore((s) => s.salir);
 
   const [ocupado, setOcupado] = useState(false);
   const [nuevoBarra, setNuevoBarra] = useState(false);
@@ -66,39 +66,12 @@ export function Piso() {
     }
   }
 
-  const acciones = (
-    <>
-      {sesion?.rol === 'admin' && (
-        <>
-          <Boton variante="secundario" onClick={() => navegar('/productos')}>
-            Productos
-          </Boton>
-          <Boton variante="secundario" onClick={() => navegar('/auxiliares')}>
-            Auxiliares
-          </Boton>
-          <Boton variante="secundario" onClick={() => navegar('/gastos')}>
-            Gastos
-          </Boton>
-          <Boton variante="secundario" onClick={() => navegar('/reportes')}>
-            Reportes
-          </Boton>
-          <Boton variante="secundario" onClick={() => navegar('/cierre')}>
-            Cierre
-          </Boton>
-        </>
-      )}
-      <Boton variante="fantasma" onClick={() => salir()}>
-        Salir
-      </Boton>
-    </>
-  );
-
   return (
     <div className="piso">
       <Encabezado
         titulo={sesion?.nombre ?? ''}
         subtitulo={sesion?.rol === 'admin' ? 'Administrador' : 'Auxiliar'}
-        acciones={acciones}
+        acciones={<NavAdmin />}
       />
 
       <div className="piso__cuerpo">

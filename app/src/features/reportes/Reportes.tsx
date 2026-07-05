@@ -7,6 +7,7 @@ import { hora } from '../../lib/fechas.js';
 import { hoyBogota, restarDias } from '../../lib/periodos.js';
 import { Chip, Tarjeta, formatearDinero } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
+import { NavAdmin } from '../comunes/NavAdmin.js';
 import { Cargando } from '../comunes/Cargando.js';
 import './reportes.css';
 
@@ -66,9 +67,14 @@ export function Reportes() {
 
   return (
     <div className="pagina">
-      <Encabezado titulo="Reportes" subtitulo="Margen, ventas y conciliación" onVolver={() => navegar('/')} />
+      <Encabezado
+        titulo="Reportes"
+        subtitulo="Margen, ventas y conciliación"
+        onVolver={() => navegar('/')}
+        acciones={<NavAdmin />}
+      />
 
-      <div className="pagina__cuerpo">
+      <div className="pagina__cuerpo pagina__cuerpo--ancho">
         <div className="rep-periodo">
           <div className="rep-presets">
             {(
@@ -244,6 +250,7 @@ function SeccionVentas({
         </Tarjeta>
       </div>
 
+      <div className="rep-cols">
       <section className="rep-seccion">
         <h2 className="seccion-titulo">Ventas por día</h2>
         <div className="rep-dias">
@@ -281,6 +288,7 @@ function SeccionVentas({
           <span>23h</span>
         </div>
       </section>
+      </div>
     </>
   );
 }

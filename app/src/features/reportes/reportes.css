@@ -216,6 +216,19 @@
   flex-direction: column;
   gap: var(--esp-3);
 }
+/* En PC, dos columnas para aprovechar el espacio lateral (día | hora). */
+.rep-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--esp-5);
+}
+@media (min-width: 900px) {
+  .rep-cols {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: var(--esp-4) var(--esp-5);
+  }
+}
 .rep-vacio {
   color: var(--tinta-media);
   text-align: center;

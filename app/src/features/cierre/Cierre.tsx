@@ -8,6 +8,7 @@ import { api, ErrorApi } from '../../lib/api.js';
 import { aEnteroDesdeTexto } from '../../lib/numeros.js';
 import { Boton, Campo, Tarjeta, formatearDinero } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
+import { NavAdmin } from '../comunes/NavAdmin.js';
 import { Cargando } from '../comunes/Cargando.js';
 import './cierre.css';
 
@@ -101,7 +102,12 @@ export function Cierre() {
 
   return (
     <div className="pagina">
-      <Encabezado titulo="Cierre de caja" subtitulo={preview.fecha} onVolver={() => navegar('/')} />
+      <Encabezado
+        titulo="Cierre de caja"
+        subtitulo={preview.fecha}
+        onVolver={() => navegar('/')}
+        acciones={<NavAdmin />}
+      />
 
       <div className="pagina__cuerpo">
         {error && <div className="aviso-error">{error}</div>}
