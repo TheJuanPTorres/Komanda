@@ -13,6 +13,42 @@
   flex-wrap: wrap;
   gap: var(--esp-2);
 }
+/* Atajos de billete: fondo tenue con el color de cada denominación colombiana.
+   Doble clase para ganar especificidad y conservar el color al estar activo. */
+.cobro__billete {
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-fuerte);
+}
+.cobro__billete.cobro__billete--azul {
+  background: #dbe6f4;
+  border-color: #7ea6d4;
+}
+.cobro__billete.cobro__billete--cafe {
+  background: #e9ddce;
+  border-color: #b2946c;
+}
+.cobro__billete.cobro__billete--rojo {
+  background: #f5dada;
+  border-color: #d68585;
+}
+.cobro__billete.cobro__billete--naranja {
+  background: #fbe4cf;
+  border-color: #e0a15f;
+}
+.cobro__billete.cobro__billete--morado {
+  background: #e6dcf1;
+  border-color: #a887c9;
+}
+.cobro__billete.cobro__billete--verde {
+  background: #d9edda;
+  border-color: #82bc89;
+}
+/* Seleccionado: conserva el color del billete y marca la elección. */
+.cobro__billete.ds-chip--activo {
+  border-width: 2px;
+  box-shadow: 0 0 0 2px rgba(21, 17, 10, 0.16) inset;
+}
 .cobro__resumen {
   display: flex;
   justify-content: space-between;

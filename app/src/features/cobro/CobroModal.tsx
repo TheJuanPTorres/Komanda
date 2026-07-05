@@ -24,6 +24,17 @@ const METODOS: [Metodo, string][] = [
   ['mixto', 'Mixto']
 ];
 
+// Atajos de billete para calcular el vuelto. El color es tenue y corresponde a
+// la denominación del billete colombiano, para identificarlo de un vistazo.
+const BILLETES: { valor: number; color: string }[] = [
+  { valor: 2000, color: 'azul' },
+  { valor: 5000, color: 'cafe' },
+  { valor: 10000, color: 'rojo' },
+  { valor: 20000, color: 'naranja' },
+  { valor: 50000, color: 'morado' },
+  { valor: 100000, color: 'verde' }
+];
+
 export function CobroModal({ pedidoId, total, onCerrar, onCobrado }: Props) {
   const cobrar = useStore((s) => s.cobrar);
 
@@ -98,10 +109,21 @@ export function CobroModal({ pedidoId, total, onCerrar, onCobrado }: Props) {
               placeholder={String(total)}
             />
             <div className="cobro__chips">
-              <Chip onClick={() => setRecibido(total)}>Exacto</Chip>
-              {[20000, 50000, 100000].map((v) => (
-                <Chip key={v} onClick={() => setRecibido(v)}>
-                  {formatearDinero(v)}
+              <Chip
+                className="cobro__exacto"
+                activo={total > 0 && recibido === total}
+                onClick={() => setRecibido(total)}
+              >
+                Exacto {formatearDinero(total)}
+              </Chip>
+              {BILLETES.map((b) => (
+                <Chip
+                  key={b.valor}
+                  className={`cobro__billete cobro__billete--${b.color}`}
+                  activo={recibido === b.valor}
+                  onClick={() => setRecibido(b.valor)}
+                >
+                  {formatearDinero(b.valor)}
                 </Chip>
               ))}
             </div>
