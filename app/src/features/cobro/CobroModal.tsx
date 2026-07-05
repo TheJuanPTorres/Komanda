@@ -39,7 +39,8 @@ export function CobroModal({ pedidoId, total, onCerrar, onCobrado }: Props) {
   const cobrar = useStore((s) => s.cobrar);
 
   const [metodo, setMetodo] = useState<Metodo>('efectivo');
-  const [recibido, setRecibido] = useState(0);
+  // El campo arranca con el valor exacto (el total): pago justo por defecto.
+  const [recibido, setRecibido] = useState(total);
   const [efectivoMixto, setEfectivoMixto] = useState(0);
   const [referencia, setReferencia] = useState('');
   const [ocupado, setOcupado] = useState(false);
@@ -114,7 +115,7 @@ export function CobroModal({ pedidoId, total, onCerrar, onCobrado }: Props) {
                 activo={total > 0 && recibido === total}
                 onClick={() => setRecibido(total)}
               >
-                Exacto {formatearDinero(total)}
+                Exacto
               </Chip>
               {BILLETES.map((b) => (
                 <Chip
@@ -123,7 +124,7 @@ export function CobroModal({ pedidoId, total, onCerrar, onCobrado }: Props) {
                   activo={recibido === b.valor}
                   onClick={() => setRecibido(b.valor)}
                 >
-                  {formatearDinero(b.valor)}
+                  {b.valor / 1000}K
                 </Chip>
               ))}
             </div>

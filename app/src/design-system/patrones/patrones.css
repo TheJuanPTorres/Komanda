@@ -208,7 +208,7 @@
   display: flex;
   align-items: center;
   gap: var(--esp-2) var(--esp-3);
-  padding: var(--esp-2) 0;
+  padding: var(--esp-3) 0;
   flex-wrap: wrap;
 }
 .pat-linea__cant {
@@ -235,11 +235,15 @@
   color: var(--tinta-fuerte);
   text-align: right;
   min-width: 84px;
+  margin-left: auto;
 }
+/* Los controles (−/+/quitar) van en su propia fila, alineados a la derecha,
+   para que el nombre y el precio nunca se apeñusquen en la columna angosta. */
 .pat-linea__controles {
   display: flex;
   gap: var(--esp-2);
-  margin-left: auto;
+  flex-basis: 100%;
+  justify-content: flex-end;
 }
 .pat-linea__paso {
   width: 48px;
