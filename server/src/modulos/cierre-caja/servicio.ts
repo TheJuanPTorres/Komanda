@@ -8,7 +8,7 @@
 import { db } from '../../db/conexion.js';
 import type { CierreCaja, CierrePreview } from '@pos/shared';
 import { errores } from '../../lib/errores.js';
-import { fechaBogotaHoy, rangoDiaBogota } from '../../lib/fechas.js';
+import { diaOperativo, rangoDiaOperativo } from '../../lib/fechas.js';
 
 interface FilaCierre {
   id: number;
@@ -37,8 +37,8 @@ interface Agregados {
 
 // Calcula ventas por método, gastos en efectivo y # de pedidos cobrados del día.
 function agregadosDelDia(): Agregados {
-  const { desdeUtc, hastaUtc } = rangoDiaBogota();
-  const fecha = fechaBogotaHoy();
+  const { desdeUtc, hastaUtc } = rangoDiaOperativo();
+  const fecha = diaOperativo();
 
   const ventas = db
     .prepare(
@@ -71,7 +71,7 @@ function agregadosDelDia(): Agregados {
 }
 
 function cierreDeHoy(): FilaCierre | undefined {
-  return db.prepare('SELECT * FROM cierres_caja WHERE fecha = ?').get(fechaBogotaHoy()) as
+  return db.prepare('SELECT * FROM cierres_caja WHERE fecha = ?').get(diaOperativo()) as
     | FilaCierre
     | undefined;
 }
@@ -93,7 +93,7 @@ export function previsualizarCierre(): CierrePreview {
   const existente = cierreDeHoy();
 
   return {
-    fecha: fechaBogotaHoy(),
+    fecha: diaOperativo(),
     ...agg,
     base_inicial_sugerida: baseSugerida(),
     pedidos_abiertos: abiertos.n,
@@ -130,7 +130,7 @@ export function registrarCierre(datos: DatosCierre, adminId: number): CierreCaja
             @efectivo_esperado, @efectivo_contado, @diferencia, @num_pedidos, @nota, @cerrado_por)`
       )
       .run({
-        fecha: fechaBogotaHoy(),
+        fecha: diaOperativo(),
         base_inicial: datos.base_inicial,
         ventas_efectivo: agg.ventas_efectivo,
         ventas_qr: agg.ventas_qr,

@@ -1,8 +1,8 @@
-// Administración de auxiliares (solo admin): crear, renombrar y desactivar.
-// Los auxiliares no tienen PIN: entran tocando su nombre en el acceso.
+// Administración de auxiliares (solo admin): crear, renombrar, asignar PIN y
+// desactivar. En internet público cada auxiliar entra con nombre + PIN de 4.
 import { useEffect, useState } from 'react';
+import { KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Usuario } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
 import { Boton, Campo, Modal } from '../../design-system/index.js';
@@ -11,7 +11,9 @@ import { NavAdmin } from '../comunes/NavAdmin.js';
 import { Cargando } from '../comunes/Cargando.js';
 import './auxiliares.css';
 
-// Editor simple (crear/renombrar) en un Modal.
+const soloDigitos = (v: string) => v.replace(/\D/g, '');
+
+// Editor de crear/renombrar. Al crear pide también el PIN (4 dígitos).
 function EditorAuxiliar({
   auxiliar,
   onCerrar,
@@ -23,12 +25,15 @@ function EditorAuxiliar({
 }) {
   const editando = auxiliar !== null;
   const [nombre, setNombre] = useState(auxiliar?.nombre ?? '');
+  const [pin, setPin] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState('');
 
+  const pinOk = editando || pin.length === 4;
+
   async function guardar() {
     const limpio = nombre.trim();
-    if (!limpio) return;
+    if (!limpio || !pinOk) return;
     setOcupado(true);
     setError('');
     try {
@@ -36,7 +41,7 @@ function EditorAuxiliar({
         ? await api.patch<{ auxiliar: Usuario }>(`/api/usuarios/auxiliares/${auxiliar.id}`, {
             nombre: limpio
           })
-        : await api.post<{ auxiliar: Usuario }>('/api/usuarios/auxiliares', { nombre: limpio });
+        : await api.post<{ auxiliar: Usuario }>('/api/usuarios/auxiliares', { nombre: limpio, pin });
       onGuardado(a);
     } catch (e) {
       setError(e instanceof ErrorApi ? e.message : 'No se pudo guardar.');
@@ -57,12 +62,76 @@ function EditorAuxiliar({
           onChange={(e) => setNombre(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && guardar()}
         />
+        {!editando && (
+          <Campo
+            etiqueta="PIN (4 dígitos)"
+            inputMode="numeric"
+            value={pin}
+            maxLength={4}
+            placeholder="****"
+            onChange={(e) => setPin(soloDigitos(e.target.value).slice(0, 4))}
+          />
+        )}
         <div className="aux-form__acciones">
           <Boton variante="secundario" bloque disabled={ocupado} onClick={onCerrar}>
             Volver
           </Boton>
-          <Boton flujo bloque disabled={ocupado || !nombre.trim()} onClick={guardar}>
+          <Boton flujo bloque disabled={ocupado || !nombre.trim() || !pinOk} onClick={guardar}>
             Guardar
+          </Boton>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Modal para asignar/restablecer el PIN de un auxiliar existente.
+function EditorPin({
+  auxiliar,
+  onCerrar,
+  onGuardado
+}: {
+  auxiliar: Usuario;
+  onCerrar: () => void;
+  onGuardado: () => void;
+}) {
+  const [pin, setPin] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  const [error, setError] = useState('');
+
+  async function guardar() {
+    if (pin.length !== 4) return;
+    setOcupado(true);
+    setError('');
+    try {
+      await api.put(`/api/usuarios/auxiliares/${auxiliar.id}/pin`, { pin });
+      onGuardado();
+    } catch (e) {
+      setError(e instanceof ErrorApi ? e.message : 'No se pudo asignar el PIN.');
+      setOcupado(false);
+    }
+  }
+
+  return (
+    <Modal titulo={`PIN de ${auxiliar.nombre}`} onCerrar={() => !ocupado && onCerrar()}>
+      <div className="aux-form">
+        {error && <div className="aviso-error">{error}</div>}
+        <Campo
+          etiqueta="PIN nuevo (4 dígitos)"
+          inputMode="numeric"
+          value={pin}
+          maxLength={4}
+          autoFocus
+          placeholder="****"
+          onChange={(e) => setPin(soloDigitos(e.target.value).slice(0, 4))}
+          onKeyDown={(e) => e.key === 'Enter' && guardar()}
+        />
+        <div className="aux-form__acciones">
+          <Boton variante="secundario" bloque disabled={ocupado} onClick={onCerrar}>
+            Volver
+          </Boton>
+          <Boton flujo bloque disabled={ocupado || pin.length !== 4} onClick={guardar}>
+            Guardar PIN
           </Boton>
         </div>
       </div>
@@ -75,14 +144,16 @@ export function Auxiliares() {
   const [auxiliares, setAuxiliares] = useState<Usuario[] | null>(null);
   const [error, setError] = useState('');
   const [editando, setEditando] = useState<Usuario | 'nuevo' | undefined>(undefined);
+  const [pinDe, setPinDe] = useState<Usuario | null>(null);
   const [porEliminar, setPorEliminar] = useState<Usuario | null>(null);
 
-  useEffect(() => {
+  function recargar() {
     api
       .get<{ auxiliares: Usuario[] }>('/api/usuarios/auxiliares')
       .then((r) => setAuxiliares(r.auxiliares))
       .catch(() => setError('No se pudo cargar la lista.'));
-  }, []);
+  }
+  useEffect(recargar, []);
 
   function trasGuardar(a: Usuario) {
     setAuxiliares((prev) => {
@@ -138,6 +209,10 @@ export function Auxiliares() {
               <div className="aux" key={a.id}>
                 <span className="aux__inicial">{a.nombre.trim().charAt(0).toUpperCase()}</span>
                 <span className="aux__nombre">{a.nombre}</span>
+                {!a.tiene_pin && <span className="aux__sinpin">Sin PIN</span>}
+                <Boton variante="secundario" onClick={() => setPinDe(a)} aria-label="Asignar PIN">
+                  <KeyRound size={20} strokeWidth={2.25} />
+                </Boton>
                 <Boton variante="secundario" onClick={() => setEditando(a)} aria-label="Renombrar">
                   <Pencil size={20} strokeWidth={2.25} />
                 </Boton>
@@ -155,6 +230,17 @@ export function Auxiliares() {
           auxiliar={editando === 'nuevo' ? null : editando}
           onCerrar={() => setEditando(undefined)}
           onGuardado={trasGuardar}
+        />
+      )}
+
+      {pinDe && (
+        <EditorPin
+          auxiliar={pinDe}
+          onCerrar={() => setPinDe(null)}
+          onGuardado={() => {
+            setPinDe(null);
+            recargar();
+          }}
         />
       )}
 

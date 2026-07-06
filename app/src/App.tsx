@@ -7,6 +7,8 @@ import { iniciarTiempoReal } from './estado/tiempoReal.js';
 import { Rutas } from './rutas.js';
 import { Cargando } from './features/comunes/Cargando.js';
 import { Preloader } from './features/preloader/Preloader.js';
+import { IndicadorConexion } from './features/comunes/IndicadorConexion.js';
+import { CambiarPinObligatorio } from './features/acceso/CambiarPinObligatorio.js';
 import { ActualizacionPWA } from './pwa/ActualizacionPWA.js';
 
 // El splash es una intro de arranque: se muestra una vez por sesión del
@@ -16,12 +18,16 @@ const CLAVE_SPLASH = 'komanda_splash_visto';
 export function App() {
   const cargarSesion = useStore((s) => s.cargarSesion);
   const cargandoSesion = useStore((s) => s.cargandoSesion);
+  const sesion = useStore((s) => s.sesion);
+  const debeCambiarPin = useStore((s) => s.debeCambiarPin);
   const [splash, setSplash] = useState(() => !sessionStorage.getItem(CLAVE_SPLASH));
 
   useEffect(() => {
     iniciarTiempoReal();
     cargarSesion();
   }, [cargarSesion]);
+
+  const forzarCambioPin = sesion?.rol === 'admin' && debeCambiarPin;
 
   return (
     <>
@@ -32,6 +38,10 @@ export function App() {
         <>
           <Rutas />
           <ActualizacionPWA />
+          {/* El aviso de conexión solo aplica con sesión activa (hay socket). */}
+          {sesion && <IndicadorConexion />}
+          {/* Bloquea la operación hasta renovar un PIN admin corto heredado. */}
+          {forzarCambioPin && <CambiarPinObligatorio />}
         </>
       )}
       {splash && (

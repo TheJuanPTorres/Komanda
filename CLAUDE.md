@@ -26,8 +26,11 @@ en el servidor (middleware de rol en el módulo cobros), nunca solo en la UI.
 
 ## Convenciones innegociables
 - DINERO: siempre enteros (pesos COP, sin decimales). Jamás float.
-- FECHAS: TEXT ISO 8601 UTC en DB (datetime('now')); conversión a hora
-  de Colombia (America/Bogota) SOLO en la capa de presentación.
+- FECHAS: TEXT ISO 8601 UTC en DB (datetime('now')). La zona del negocio
+  (TZ_NEGOCIO, default America/Bogota) SOLO interviene al calcular fronteras de
+  "día operativo" y al presentar. Fronteras SIEMPRE vía la utilidad central
+  server/src/lib/fechas.ts (diaOperativo / rangoDiaOperativo / rangoUtcDesdeFechas),
+  NUNCA con date('now') del servidor ni con la hora local del VPS.
 - BORRADO: lógico (activo = 0) en productos y usuarios. Nunca DELETE físico
   de nada que el historial referencie.
 - SNAPSHOTS: pedido_items copia nombre_producto, precio_unitario y
@@ -60,6 +63,23 @@ F5: reportes (margen por producto, ventas por día/hora)
 F6: PWA final, PM2, script de respaldo
 F7 (futuro): lector-pagos/ por correo IMAP — el modelo de pagos ya lo contempla
    (campos referencia_externa y verificado).
+
+## Producción (Fase Nube — VPS Vultr)
+- El sistema YA NO asume red local: corre en un VPS público (Vultr, Miami,
+  Ubuntu 24.04) detrás de Caddy, que termina TLS. SUPUESTO: internet hostil.
+- Node corre en HTTP en 127.0.0.1:3000 con trustProxy; Caddy hace HTTPS y
+  reverse-proxy. El servidor jamás corre como root (usuario de sistema `pos`).
+- Config por entorno validada con zod (server/src/config.ts): en producción,
+  si falta COOKIE_SECRET u ORIGEN_PERMITIDO el proceso FALLA EN FRÍO. Ver
+  .env.example. Nada de IPs 192.168, http:// sin TLS ni CORS abierto.
+- Seguridad: cookies httpOnly+secure+sameSite lax; CORS y Socket.IO estrictos a
+  ORIGEN_PERMITIDO; helmet con CSP; rate-limit (global 300/min; admin 5/15min;
+  auxiliar 20/min) + bloqueo por cuenta persistido en DB. PIN admin ≥ 6 dígitos
+  (cambio forzado si es corto); PIN de auxiliar obligatorio (4 dígitos).
+- Respaldos: server/scripts/respaldar.ts (VACUUM INTO + tar.gz de imagenes) por
+  cron 3:00 am hora del negocio, retención 14; GET /api/admin/respaldo (admin).
+- Artefactos en despliegue/: Caddyfile, ecosystem.config.cjs, instalar-vps.sh
+  (idempotente), ACTUALIZAR.md, RESPALDOS.md.
 
 ## Cómo trabajar
 - Una fase por vez. Al terminar: verificar que compila, correr las pruebas

@@ -21,13 +21,16 @@ export function calcularTotal(items: PedidoItem[]): number {
 interface EstadoApp {
   sesion: Sesion | null;
   cargandoSesion: boolean;
+  // El admin con PIN corto heredado debe renovarlo antes de operar.
+  debeCambiarPin: boolean;
   menu: MenuAgrupado;
   pedidos: PedidoConItems[];
 
   // Sesión
   cargarSesion: () => Promise<void>;
   entrarAdmin: (pin: string) => Promise<void>;
-  entrarAuxiliar: (usuarioId: number) => Promise<void>;
+  entrarAuxiliar: (usuarioId: number, pin: string) => Promise<void>;
+  cambiarPinAdmin: (pinNuevo: string) => Promise<void>;
   salir: () => Promise<void>;
 
   // Datos
@@ -57,13 +60,14 @@ type RespPedido = { pedido: PedidoConItems };
 export const useStore = create<EstadoApp>((set, get) => ({
   sesion: null,
   cargandoSesion: true,
+  debeCambiarPin: false,
   menu: [],
   pedidos: [],
 
   cargarSesion: async () => {
     try {
-      const { usuario } = await api.get<LoginResp>('/api/auth/sesion');
-      set({ sesion: usuario });
+      const { usuario, debe_cambiar_pin } = await api.get<LoginResp>('/api/auth/sesion');
+      set({ sesion: usuario, debeCambiarPin: Boolean(debe_cambiar_pin) });
       conectarSocket();
     } catch {
       set({ sesion: null });
@@ -73,21 +77,26 @@ export const useStore = create<EstadoApp>((set, get) => ({
   },
 
   entrarAdmin: async (pin) => {
-    const { usuario } = await api.post<LoginResp>('/api/auth/admin', { pin });
-    set({ sesion: usuario });
+    const { usuario, debe_cambiar_pin } = await api.post<LoginResp>('/api/auth/admin', { pin });
+    set({ sesion: usuario, debeCambiarPin: Boolean(debe_cambiar_pin) });
     conectarSocket();
   },
 
-  entrarAuxiliar: async (usuarioId) => {
-    const { usuario } = await api.post<LoginResp>('/api/auth/auxiliar', { usuarioId });
-    set({ sesion: usuario });
+  entrarAuxiliar: async (usuarioId, pin) => {
+    const { usuario } = await api.post<LoginResp>('/api/auth/auxiliar', { usuarioId, pin });
+    set({ sesion: usuario, debeCambiarPin: false });
     conectarSocket();
+  },
+
+  cambiarPinAdmin: async (pinNuevo) => {
+    await api.post('/api/auth/admin/cambiar-pin', { pin_nuevo: pinNuevo });
+    set({ debeCambiarPin: false });
   },
 
   salir: async () => {
     await api.post('/api/auth/salir');
     desconectarSocket();
-    set({ sesion: null, pedidos: [], menu: [] });
+    set({ sesion: null, debeCambiarPin: false, pedidos: [], menu: [] });
   },
 
   cargarMenu: async () => {

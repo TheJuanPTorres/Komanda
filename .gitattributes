@@ -1,0 +1,6 @@
+# Los scripts que corren en el VPS (Linux) deben tener SIEMPRE saltos de línea
+# LF, aunque se editen en Windows: con CRLF, bash falla con "$'\r': command not
+# found". Esto garantiza que el despliegue funcione.
+*.sh        text eol=lf
+Caddyfile   text eol=lf
+*.mjs       text eol=lf

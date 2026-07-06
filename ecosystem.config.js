@@ -1,4 +1,5 @@
-// Configuración de PM2 para producción.
+// Configuración de PM2 (uso local/LAN, Fase 6). Para el VPS público en la nube
+// usa despliegue/ecosystem.config.cjs (carga /opt/pos/.env con --env-file).
 // Arranca el servidor ya compilado (server/dist/index.js). El servidor aplica
 // las migraciones pendientes solo al arrancar, así que no hay paso extra.
 //
@@ -8,8 +9,8 @@
 //   pm2 start ecosystem.config.js
 //   pm2 save && pm2 startup           (para que reviva al reiniciar la máquina)
 //
-// Definir el secreto de sesión (una vez, MUY recomendado en producción):
-//   pm2 set pos-server:JWT_SECRET "una-clave-larga-y-secreta"
+// Los secretos (COOKIE_SECRET, ORIGEN_PERMITIDO, …) van en un .env o en el
+// entorno del proceso; nunca en este archivo. Ver .env.example.
 module.exports = {
   apps: [
     {
@@ -27,9 +28,8 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: '3000',
         HOST: '0.0.0.0'
-        // JWT_SECRET: definir con `pm2 set` (ver arriba), no aquí.
-        // HTTPS_KEY / HTTPS_CERT: rutas a los certificados si se usa HTTPS
-        // (necesario para la PWA en celulares por la red local).
+        // COOKIE_SECRET, ORIGEN_PERMITIDO, RUTA_DATOS, TZ_NEGOCIO: definir en el
+        // entorno del sistema o un .env cargado con `node --env-file`. Nunca aquí.
       }
     },
     {

@@ -1,12 +1,15 @@
 // Punto de entrada del servidor.
 // Fastify (API REST) + Socket.IO (tiempo real) sobre el mismo servidor HTTP.
-// Escucha en 0.0.0.0 para ser accesible desde los celulares en la red local.
+// En producción corre en HTTP detrás de Caddy (que termina TLS): trustProxy.
 import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import fastifyCors from '@fastify/cors';
+import fastifyHelmet from '@fastify/helmet';
+import fastifyRateLimit from '@fastify/rate-limit';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { SaludResp } from '@pos/shared';
 import { config, enProduccion } from './config.js';
@@ -20,29 +23,69 @@ import { rutasCobros } from './modulos/cobros/rutas.js';
 import { rutasGastos } from './modulos/gastos/rutas.js';
 import { rutasCierreCaja } from './modulos/cierre-caja/rutas.js';
 import { rutasReportes } from './modulos/reportes/rutas.js';
+import { rutasAdmin } from './modulos/admin/rutas.js';
 import { iniciarWebsockets } from './ws/servidor.js';
-
-// HTTPS solo si están ambos archivos de certificado (ver config).
-const usarHttps = existsSync(config.httpsKey) && existsSync(config.httpsCert);
 
 async function construirServidor() {
   const app = Fastify({
+    // Caddy termina TLS y hace de reverse-proxy: confiar en X-Forwarded-* para
+    // que el rate-limit vea la IP real del cliente y las cookies 'secure' vayan.
+    trustProxy: true,
     logger: {
       transport: enProduccion
         ? undefined
         : { target: 'pino-pretty', options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' } }
-    },
-    ...(usarHttps
-      ? { https: { key: readFileSync(config.httpsKey), cert: readFileSync(config.httpsCert) } }
-      : {})
+    }
   });
 
   // Plugins base.
   await app.register(fastifyCookie);
   await app.register(fastifyJwt, {
-    secret: config.jwtSecret,
+    secret: config.cookieSecret,
     // El JWT viaja en la cookie httpOnly; jwtVerify() la lee de aquí.
     cookie: { cookieName: config.cookieSesion, signed: false }
+  });
+
+  // Seguridad: cabeceras (helmet), CORS estricto y límite de peticiones.
+  await app.register(fastifyHelmet, {
+    // CSP compatible con la PWA (mismo origen), imágenes locales y WebSocket.
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // El bundle de Vite puede requerir estilos en línea; scripts propios.
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        fontSrc: ["'self'"],
+        // Socket.IO (mismo origen). Se añade el equivalente wss explícito por si
+        // algún navegador no cubre WebSocket con 'self'.
+        connectSrc: ["'self'", config.origenPermitido.replace(/^http/, 'ws')],
+        manifestSrc: ["'self'"],
+        workerSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"]
+      }
+    },
+    // El front vive en el mismo origen; no necesitamos aislar recursos entre orígenes.
+    crossOriginEmbedderPolicy: false
+  });
+  await app.register(fastifyCors, {
+    origin: config.origenPermitido,
+    credentials: true
+  });
+  await app.register(fastifyRateLimit, {
+    global: true,
+    max: 300, // 300 req/min por IP (las rutas de login bajan este límite)
+    timeWindow: '1 minute',
+    // 429 con la forma { error: { codigo, mensaje } } y un mensaje humano.
+    errorResponseBuilder: () => ({
+      statusCode: 429,
+      error: {
+        codigo: 'DEMASIADAS_PETICIONES',
+        mensaje: 'Demasiadas solicitudes. Espera un momento e intenta de nuevo.'
+      }
+    })
   });
   // Subida de imágenes de producto (máx 5 MB por archivo).
   await app.register(fastifyMultipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
@@ -60,9 +103,10 @@ async function construirServidor() {
   });
 
   // ── Rutas de infraestructura ──────────────────────────────────────────
+  // Salud: solo ok/uptime. No expone versión ni rutas internas (internet hostil).
   const arrancado = Date.now();
   app.get('/api/salud', async (): Promise<SaludResp> => {
-    return { ok: true, version: config.version, uptime: (Date.now() - arrancado) / 1000 };
+    return { ok: true, uptime: (Date.now() - arrancado) / 1000 };
   });
 
   // ── Rutas de negocio ─────────────────────────────────────────────────
@@ -74,6 +118,7 @@ async function construirServidor() {
   await app.register(rutasGastos);
   await app.register(rutasCierreCaja);
   await app.register(rutasReportes);
+  await app.register(rutasAdmin);
 
   // ── Estáticos del front (solo si app/dist existe) + fallback SPA ──────
   const hayFront = existsSync(join(config.rutaAppDist, 'index.html'));
@@ -106,8 +151,8 @@ async function main(): Promise<void> {
 
   try {
     await app.listen({ port: config.puerto, host: config.host });
-    const protocolo = usarHttps ? 'https' : 'http';
-    app.log.info(`POS escuchando en ${protocolo}://${config.host}:${config.puerto}`);
+    // En producción el borde HTTPS lo pone Caddy; aquí siempre es HTTP local.
+    app.log.info(`POS escuchando en http://${config.host}:${config.puerto}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

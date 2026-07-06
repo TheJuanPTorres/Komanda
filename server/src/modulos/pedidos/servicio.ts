@@ -11,7 +11,7 @@
 import { db } from '../../db/conexion.js';
 import type { Pedido, PedidoConItems, PedidoItem } from '@pos/shared';
 import { errores } from '../../lib/errores.js';
-import { rangoDiaBogota } from '../../lib/fechas.js';
+import { rangoDiaOperativo } from '../../lib/fechas.js';
 import { emisor } from '../../ws/emisor.js';
 import { obtenerProducto, obtenerProductoActivo } from '../productos/servicio.js';
 import { registrarEvento } from './eventos.js';
@@ -147,7 +147,7 @@ export function abrirMesa(
 
 // Siguiente turno del día para barra (máximo del día + 1), en hora Bogotá.
 function siguienteTurnoBarra(): number {
-  const { desdeUtc, hastaUtc } = rangoDiaBogota();
+  const { desdeUtc, hastaUtc } = rangoDiaOperativo();
   const fila = db
     .prepare(
       "SELECT MAX(turno) AS maximo FROM pedidos WHERE tipo = 'barra' AND creado_en >= ? AND creado_en < ?"

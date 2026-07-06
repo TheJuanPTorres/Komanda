@@ -2,7 +2,7 @@
 // que el cierre agrupe por día del negocio (no por el día UTC).
 import { db } from '../../db/conexion.js';
 import type { CategoriaGasto, Gasto, MetodoPago } from '@pos/shared';
-import { fechaBogotaHoy } from '../../lib/fechas.js';
+import { diaOperativo } from '../../lib/fechas.js';
 
 interface FilaGasto {
   id: number;
@@ -27,7 +27,7 @@ export interface NuevoGasto {
 }
 
 /** Lista los gastos de un día (por defecto, hoy en Bogotá), más recientes primero. */
-export function listarGastosDelDia(fecha: string = fechaBogotaHoy()): Gasto[] {
+export function listarGastosDelDia(fecha: string = diaOperativo()): Gasto[] {
   const filas = db
     .prepare('SELECT * FROM gastos WHERE fecha = ? ORDER BY creado_en DESC')
     .all(fecha) as FilaGasto[];
@@ -36,7 +36,7 @@ export function listarGastosDelDia(fecha: string = fechaBogotaHoy()): Gasto[] {
 
 /** Registra un gasto con la fecha del día de Bogotá. */
 export function crearGasto(datos: NuevoGasto, usuarioId: number): Gasto {
-  const fecha = fechaBogotaHoy();
+  const fecha = diaOperativo();
   const info = db
     .prepare(
       `INSERT INTO gastos (concepto, categoria, monto, metodo, nota, registrado_por, fecha)

@@ -1,4 +1,5 @@
-// Pantalla de acceso: cada auxiliar toca su nombre; el admin entra con PIN.
+// Pantalla de acceso (internet público): cada persona entra con su PIN.
+// El auxiliar toca su nombre y digita su PIN de 4; el admin, su PIN de ≥ 6.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Usuario } from '@pos/shared';
@@ -9,13 +10,15 @@ import { Cargando } from '../comunes/Cargando.js';
 import logo from '../../design-system/logo.svg';
 import './acceso.css';
 
+type Modo = { tipo: 'lista' } | { tipo: 'auxiliar'; aux: Usuario } | { tipo: 'admin' };
+
 export function Acceso() {
   const navegar = useNavigate();
   const entrarAuxiliar = useStore((s) => s.entrarAuxiliar);
   const entrarAdmin = useStore((s) => s.entrarAdmin);
 
   const [auxiliares, setAuxiliares] = useState<Usuario[] | null>(null);
-  const [modoAdmin, setModoAdmin] = useState(false);
+  const [modo, setModo] = useState<Modo>({ tipo: 'lista' });
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [ocupado, setOcupado] = useState(false);
@@ -27,24 +30,35 @@ export function Acceso() {
       .catch(() => setAuxiliares([]));
   }, []);
 
-  async function accederAuxiliar(id: number) {
+  function volverALista() {
+    setModo({ tipo: 'lista' });
+    setPin('');
     setError('');
-    setOcupado(true);
-    try {
-      await entrarAuxiliar(id);
-      navegar('/', { replace: true });
-    } catch (e) {
-      setError(e instanceof ErrorApi ? e.message : 'No se pudo entrar.');
-      setOcupado(false);
-    }
   }
 
-  async function accederAdmin() {
-    if (pin.length < 4) return;
+  function elegirAuxiliar(aux: Usuario) {
+    setError('');
+    if (!aux.tiene_pin) {
+      setError('Este auxiliar aún no tiene PIN. Pídele al administrador que te asigne uno.');
+      return;
+    }
+    setPin('');
+    setModo({ tipo: 'auxiliar', aux });
+  }
+
+  async function acceder() {
     setError('');
     setOcupado(true);
     try {
-      await entrarAdmin(pin);
+      if (modo.tipo === 'admin') {
+        // El PIN vigente puede ser corto (heredado): el servidor lo valida.
+        // Si es corto, tras entrar se fuerza a definir uno de ≥ 6.
+        if (pin.length < 4) throw new ErrorApi('PIN_CORTO', 'Escribe tu PIN.', 400);
+        await entrarAdmin(pin);
+      } else if (modo.tipo === 'auxiliar') {
+        if (pin.length !== 4) throw new ErrorApi('PIN_CORTO', 'El PIN es de 4 dígitos.', 400);
+        await entrarAuxiliar(modo.aux.id, pin);
+      }
       navegar('/', { replace: true });
     } catch (e) {
       setError(e instanceof ErrorApi ? e.message : 'No se pudo entrar.');
@@ -54,6 +68,13 @@ export function Acceso() {
   }
 
   if (auxiliares === null) return <Cargando />;
+
+  const titulo =
+    modo.tipo === 'admin'
+      ? 'PIN de administrador'
+      : modo.tipo === 'auxiliar'
+        ? `PIN de ${modo.aux.nombre}`
+        : null;
 
   return (
     <div className="acceso">
@@ -66,7 +87,7 @@ export function Acceso() {
 
         {error && <div className="aviso-error">{error}</div>}
 
-        {!modoAdmin ? (
+        {modo.tipo === 'lista' ? (
           <>
             <div>
               <div className="acceso__seccion">Auxiliares</div>
@@ -77,7 +98,7 @@ export function Acceso() {
                     variante="secundario"
                     flujo
                     disabled={ocupado}
-                    onClick={() => accederAuxiliar(a.id)}
+                    onClick={() => elegirAuxiliar(a)}
                   >
                     {a.nombre}
                   </Boton>
@@ -93,32 +114,23 @@ export function Acceso() {
 
             <div className="acceso__separador">o</div>
 
-            <Boton variante="fantasma" bloque onClick={() => setModoAdmin(true)}>
+            <Boton variante="fantasma" bloque onClick={() => setModo({ tipo: 'admin' })}>
               Entrar como administrador
             </Boton>
           </>
         ) : (
           <>
-            <div className="acceso__seccion">PIN de administrador</div>
+            <div className="acceso__seccion">{titulo}</div>
             <TecladoPin
               valor={pin}
-              longitud={4}
+              longitud={modo.tipo === 'admin' ? 8 : 4}
               onCambio={(v) => {
                 setError('');
                 setPin(v);
               }}
-              onEnter={accederAdmin}
+              onEnter={acceder}
             />
-            <Boton
-              variante="fantasma"
-              bloque
-              disabled={ocupado}
-              onClick={() => {
-                setModoAdmin(false);
-                setPin('');
-                setError('');
-              }}
-            >
+            <Boton variante="fantasma" bloque disabled={ocupado} onClick={volverALista}>
               Volver
             </Boton>
           </>

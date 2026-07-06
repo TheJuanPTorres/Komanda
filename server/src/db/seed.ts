@@ -58,10 +58,12 @@ const sembrar = db.transaction(() => {
   const insUsuario = db.prepare(
     'INSERT INTO usuarios (nombre, rol, pin_hash) VALUES (?, ?, ?)'
   );
-  const usuarios: [string, 'admin' | 'auxiliar', string | null][] = [
-    ['Administrador', 'admin', hashearPin('1234')],
-    ['Carolina', 'auxiliar', null],
-    ['Andrés', 'auxiliar', null]
+  // En internet público todos entran con PIN. El admin arranca con un PIN de 6
+  // dígitos (ya cumple el mínimo); los auxiliares demo con 4 dígitos.
+  const usuarios: [string, 'admin' | 'auxiliar', string][] = [
+    ['Administrador', 'admin', hashearPin('123456')],
+    ['Carolina', 'auxiliar', hashearPin('1111')],
+    ['Andrés', 'auxiliar', hashearPin('2222')]
   ];
   let nuevosUsuarios = 0;
   for (const [nombre, rol, pin] of usuarios) {
@@ -70,7 +72,7 @@ const sembrar = db.transaction(() => {
       nuevosUsuarios++;
     }
   }
-  console.log(`Usuarios: ${nuevosUsuarios} nuevo(s) (admin PIN=1234 si es primera vez).`);
+  console.log(`Usuarios: ${nuevosUsuarios} nuevo(s) (admin PIN=123456, auxiliares 1111/2222 si es 1ª vez).`);
 
   // ── Categorías reales (idempotente por nombre; reactiva si estaba oculta) ─
   const idCategoria = (nombre: string): number => {

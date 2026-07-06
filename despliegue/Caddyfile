@@ -1,0 +1,18 @@
+# Caddy: termina TLS (certificado automático de Let's Encrypt) y hace de
+# reverse-proxy al proceso Node en 127.0.0.1:3000. Los WebSockets (Socket.IO)
+# pasan de forma transparente. Compresión zstd/gzip.
+#
+# {$DOMINIO} lo inyecta instalar-vps.sh (variable de entorno) al recargar Caddy.
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	# Node ve la IP real y el esquema https por trustProxy (X-Forwarded-*).
+	reverse_proxy 127.0.0.1:3000
+
+	# Cabecera de seguridad de transporte (Caddy ya fuerza HTTPS).
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}

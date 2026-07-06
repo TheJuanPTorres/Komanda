@@ -44,3 +44,15 @@
   gap: var(--esp-2);
   margin-top: var(--esp-1);
 }
+
+.aux__sinpin {
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radio-pill);
+  background: var(--coma);
+  color: var(--tinta-fuerte);
+}

@@ -1,12 +1,13 @@
 // Rutas de usuarios. La lista de auxiliares para la pantalla de acceso es
-// pública; la administración de auxiliares (crear/renombrar/desactivar) es
-// solo para el admin.
+// pública; la administración de auxiliares (crear/renombrar/desactivar/PIN) es
+// solo para el admin. En internet público cada auxiliar tiene PIN de 4 dígitos.
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import type { GuardarAuxiliarReq, Usuario } from '@pos/shared';
+import type { Usuario } from '@pos/shared';
 import { errores } from '../../lib/errores.js';
 import { requiereRol } from './middleware.js';
 import {
+  asignarPinAuxiliar,
   buscarAuxiliar,
   crearAuxiliar,
   desactivarAuxiliar,
@@ -15,9 +16,17 @@ import {
 } from './servicio.js';
 
 const idParam = z.object({ id: z.coerce.number().int().positive() });
-const guardarAuxiliarSchema = z.object({
+const pin4 = z.string().regex(/^\d{4}$/, 'El PIN del auxiliar debe ser de 4 dígitos.');
+
+// Crear: nombre + PIN obligatorio. Renombrar: solo nombre.
+const crearAuxiliarSchema = z.object({
+  nombre: z.string().trim().min(1, 'Escribe el nombre.').max(40),
+  pin: pin4
+});
+const renombrarSchema = z.object({
   nombre: z.string().trim().min(1, 'Escribe el nombre.').max(40)
-}) satisfies z.ZodType<GuardarAuxiliarReq>;
+});
+const asignarPinSchema = z.object({ pin: pin4 });
 
 export async function rutasUsuarios(app: FastifyInstance): Promise<void> {
   // GET /api/usuarios/auxiliares — lista de auxiliares activos (público).
@@ -25,10 +34,10 @@ export async function rutasUsuarios(app: FastifyInstance): Promise<void> {
     return { auxiliares: listarAuxiliaresActivos() satisfies Usuario[] };
   });
 
-  // POST /api/usuarios/auxiliares — crear auxiliar (admin).
+  // POST /api/usuarios/auxiliares — crear auxiliar con PIN (admin).
   app.post('/api/usuarios/auxiliares', { preHandler: requiereRol('admin') }, async (req, reply) => {
-    const { nombre } = guardarAuxiliarSchema.parse(req.body);
-    const auxiliar = crearAuxiliar(nombre);
+    const { nombre, pin } = crearAuxiliarSchema.parse(req.body);
+    const auxiliar = crearAuxiliar(nombre, pin);
     if (!auxiliar) throw errores.nombreEnUso();
     return reply.status(201).send({ auxiliar });
   });
@@ -37,10 +46,19 @@ export async function rutasUsuarios(app: FastifyInstance): Promise<void> {
   app.patch('/api/usuarios/auxiliares/:id', { preHandler: requiereRol('admin') }, async (req) => {
     const { id } = idParam.parse(req.params);
     if (!buscarAuxiliar(id)) throw errores.noEncontrado('Ese auxiliar no existe.');
-    const { nombre } = guardarAuxiliarSchema.parse(req.body);
+    const { nombre } = renombrarSchema.parse(req.body);
     const auxiliar = renombrarAuxiliar(id, nombre);
     if (!auxiliar) throw errores.nombreEnUso();
     return { auxiliar };
+  });
+
+  // PUT /api/usuarios/auxiliares/:id/pin — asignar/restablecer PIN (admin).
+  app.put('/api/usuarios/auxiliares/:id/pin', { preHandler: requiereRol('admin') }, async (req) => {
+    const { id } = idParam.parse(req.params);
+    if (!buscarAuxiliar(id)) throw errores.noEncontrado('Ese auxiliar no existe.');
+    const { pin } = asignarPinSchema.parse(req.body);
+    asignarPinAuxiliar(id, pin);
+    return { ok: true };
   });
 
   // DELETE /api/usuarios/auxiliares/:id — desactivar auxiliar (admin).

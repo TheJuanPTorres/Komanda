@@ -9,8 +9,8 @@ import { registrarIo } from './emisor.js';
 
 export function iniciarWebsockets(app: FastifyInstance): Server {
   const io = new Server(app.server, {
-    // Mismo origen en producción; en dev el proxy de Vite reenvía a /socket.io.
-    cors: { origin: true, credentials: true }
+    // CORS estricto al origen público permitido (mismo que la API REST).
+    cors: { origin: config.origenPermitido, credentials: true }
   });
 
   // Middleware de autenticación del socket.

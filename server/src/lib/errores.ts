@@ -51,7 +51,13 @@ export const errores = {
   imagenInvalida: (mensaje = 'La imagen no es válida.') =>
     new ErrorApp(400, 'IMAGEN_INVALIDA', mensaje),
   nombreEnUso: () =>
-    new ErrorApp(409, 'NOMBRE_EN_USO', 'Ya hay alguien con ese nombre. Usa uno diferente.')
+    new ErrorApp(409, 'NOMBRE_EN_USO', 'Ya hay alguien con ese nombre. Usa uno diferente.'),
+  demasiadosIntentos: () =>
+    new ErrorApp(429, 'DEMASIADOS_INTENTOS', 'Demasiados intentos fallidos. Espera unos minutos e intenta de nuevo.'),
+  pinCorto: (min: number) =>
+    new ErrorApp(400, 'PIN_CORTO', `El PIN debe tener al menos ${min} dígitos.`),
+  auxiliarSinPin: () =>
+    new ErrorApp(403, 'AUXILIAR_SIN_PIN', 'Aún no tienes PIN. Pídele al administrador que te asigne uno.')
 };
 
 export function responderError(

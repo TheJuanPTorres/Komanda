@@ -15,8 +15,9 @@ export interface Usuario {
   id: number;
   nombre: string;
   rol: Rol;
-  // pin_hash NUNCA viaja al cliente; por eso no está en esta interfaz pública.
+  // pin_hash NUNCA viaja al cliente; solo si el usuario TIENE un PIN asignado.
   activo: boolean;
+  tiene_pin: boolean;
   creado_en: string;
 }
 
@@ -123,12 +124,21 @@ export interface LoginAdminReq {
   pin: string;
 }
 
+// En internet público el auxiliar entra con nombre + PIN de 4 dígitos.
 export interface LoginAuxiliarReq {
   usuarioId: number;
+  pin: string;
 }
 
 export interface LoginResp {
   usuario: Sesion;
+  // Si el admin tiene un PIN corto heredado, debe definir uno ≥ 6 antes de seguir.
+  debe_cambiar_pin?: boolean;
+}
+
+// Cambio del PIN de admin (mínimo 6 dígitos).
+export interface CambiarPinAdminReq {
+  pin_nuevo: string;
 }
 
 // ── Administración de productos y auxiliares (admin) ─────────────────────
@@ -144,14 +154,21 @@ export interface GuardarProductoReq {
   stock_minimo: number;
 }
 
-// Crear o renombrar un auxiliar (sin PIN: entra por selección de nombre).
+// Crear o renombrar un auxiliar. En internet público el PIN (4 dígitos) es
+// obligatorio al crear; al renombrar es opcional (se conserva el actual).
 export interface GuardarAuxiliarReq {
   nombre: string;
+  pin?: string;
 }
 
+// Asignar/restablecer el PIN de un auxiliar (4 dígitos).
+export interface AsignarPinReq {
+  pin: string;
+}
+
+// Salud pública: no expone versión ni rutas (internet hostil).
 export interface SaludResp {
   ok: true;
-  version: string;
   uptime: number;
 }
 

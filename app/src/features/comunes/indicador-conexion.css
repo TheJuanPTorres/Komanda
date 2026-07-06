@@ -1,0 +1,21 @@
+/* Barra fija de "sin conexión". Amarillo de la marca sobre tinta oscura para
+   que se note sin alarmar (no es un error de la app, es la red). */
+.conexion {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--coma);
+  color: var(--tinta-fuerte);
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  box-shadow: 0 -4px 14px -8px rgba(21, 17, 10, 0.6);
+}
