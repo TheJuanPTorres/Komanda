@@ -44,6 +44,29 @@ pm2 reload pos-server
 Si una migración corrompió datos, restaura desde el respaldo del paso 1
 siguiendo `RESPALDOS.md` (detén la app, extrae el `.tar.gz`, arranca).
 
+## Emergencias
+
+### Cuenta bloqueada por intentos (admin fuera del sistema)
+
+Si un atacante re-dispara el bloqueo por cuenta del admin cada 15 minutos
+(desde IPs distintas) y no hay una sesión de admin activa para desbloquear
+desde *Equipo*, usa la salida por SSH (no está expuesta por HTTP):
+
+```bash
+sudo -iu pos
+cd /opt/pos
+
+# Ver qué cuentas están bloqueadas y cuánto les falta para liberarse solas
+npm run desbloquear
+
+# Liberar una cuenta ya (por nombre exacto de usuario)
+npm run desbloquear -- Administrador
+# → Cuenta "Administrador" desbloqueada. Fallos reiniciados a 0.
+```
+
+> Nota: solo reinicia el contador de fallos; no cambia PINs ni sesiones. Si el
+> ataque persiste, considera restringir el acceso por IP en Caddy o el firewall.
+
 > Nota: `instalar-vps.sh` es idempotente; también puedes re-ejecutarlo tras un
 > `git pull` para reinstalar todo de forma consistente (no borra la base ni el
 > `.env` existentes).

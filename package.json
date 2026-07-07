@@ -20,6 +20,8 @@
     "seed": "npm run seed -w @pos/server",
     "migrar": "npm run migrar -w @pos/server",
     "respaldo": "npm run respaldo -w @pos/server",
+    "respaldar": "npm run respaldar -w @pos/server",
+    "desbloquear": "npm run desbloquear -w @pos/server --",
     "iconos": "npm run iconos -w @pos/app"
   },
   "engines": {

@@ -12,6 +12,7 @@
     "migrar": "tsx src/db/migrar.ts",
     "respaldo": "node scripts/respaldo.mjs",
     "respaldar": "tsx scripts/respaldar.ts",
+    "desbloquear": "tsx scripts/desbloquear.ts",
     "test": "node --import tsx --test src/lib/fechas.test.ts"
   },
   "dependencies": {

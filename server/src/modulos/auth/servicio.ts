@@ -34,9 +34,66 @@ export function cuentaBloqueada(usuarioId: number): boolean {
   return fila.n >= MAX_FALLOS;
 }
 
-/** Limpia los fallos de una cuenta (tras un login exitoso). */
+/** Limpia los fallos de una cuenta (tras un login exitoso o desbloqueo manual). */
 export function limpiarIntentos(usuarioId: number): void {
   db.prepare('DELETE FROM intentos_login WHERE usuario_id = ?').run(usuarioId);
+}
+
+// ── Apoyo para el desbloqueo de emergencia por CLI ─────────────────────────
+
+export interface UsuarioBasico {
+  id: number;
+  nombre: string;
+  rol: Rol;
+}
+
+/** Un usuario (cualquier rol) por nombre exacto, o undefined. */
+export function usuarioPorNombre(nombre: string): UsuarioBasico | undefined {
+  return db
+    .prepare('SELECT id, nombre, rol FROM usuarios WHERE nombre = ?')
+    .get(nombre) as UsuarioBasico | undefined;
+}
+
+/** Nombres de todos los usuarios activos (para sugerir ante un nombre errado). */
+export function listarNombres(): string[] {
+  return (db.prepare('SELECT nombre FROM usuarios WHERE activo = 1 ORDER BY nombre').all() as {
+    nombre: string;
+  }[]).map((f) => f.nombre);
+}
+
+export interface CuentaBloqueada extends UsuarioBasico {
+  fallos: number;
+  // Minutos hasta que el bloqueo se levante solo si no llegan más fallos.
+  restante_min: number;
+}
+
+/**
+ * Cuentas actualmente bloqueadas (≥ MAX_FALLOS fallos en la ventana), con los
+ * minutos que faltan para que el bloqueo caduque solo (si no hay más fallos):
+ * el 8.º fallo más reciente sale de la ventana en su hora + VENTANA_MIN.
+ */
+export function listarBloqueadas(): CuentaBloqueada[] {
+  const filas = db
+    .prepare(
+      `SELECT u.id, u.nombre, u.rol, COUNT(*) AS fallos
+         FROM intentos_login i JOIN usuarios u ON u.id = i.usuario_id
+        WHERE i.creado_en > datetime('now', ?)
+        GROUP BY u.id
+       HAVING fallos >= ?`
+    )
+    .all(`-${VENTANA_MIN} minutes`, MAX_FALLOS) as (UsuarioBasico & { fallos: number })[];
+
+  return filas.map((f) => {
+    // Hora del 8.º fallo más reciente (rank MAX_FALLOS desde el más nuevo).
+    const octavo = db
+      .prepare(
+        `SELECT (julianday(datetime(creado_en, ?)) - julianday('now')) * 24 * 60 AS min
+           FROM intentos_login WHERE usuario_id = ?
+          ORDER BY creado_en DESC LIMIT 1 OFFSET ?`
+      )
+      .get(`+${VENTANA_MIN} minutes`, f.id, MAX_FALLOS - 1) as { min: number } | undefined;
+    return { ...f, restante_min: Math.max(0, Math.ceil(octavo?.min ?? 0)) };
+  });
 }
 
 /** Cambia el PIN del usuario (ya hasheado) y baja la bandera de cambio forzado. */

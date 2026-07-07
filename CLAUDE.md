@@ -76,6 +76,9 @@ F7 (futuro): lector-pagos/ por correo IMAP — el modelo de pagos ya lo contempl
   ORIGEN_PERMITIDO; helmet con CSP; rate-limit (global 300/min; admin 5/15min;
   auxiliar 20/min) + bloqueo por cuenta persistido en DB. PIN admin ≥ 6 dígitos
   (cambio forzado si es corto); PIN de auxiliar obligatorio (4 dígitos).
+- EMERGENCIA (solo SSH, no expuesto por HTTP): si el bloqueo por cuenta deja al
+  admin fuera, `npm run desbloquear -- <nombre>` reinicia sus fallos a 0
+  (sin argumento lista las cuentas bloqueadas). Ver despliegue/ACTUALIZAR.md.
 - Respaldos: server/scripts/respaldar.ts (VACUUM INTO + tar.gz de imagenes) por
   cron 3:00 am hora del negocio, retención 14; GET /api/admin/respaldo (admin).
 - Artefactos en despliegue/: Caddyfile, ecosystem.config.cjs, instalar-vps.sh
