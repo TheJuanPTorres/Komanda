@@ -39,8 +39,8 @@ export function limpiarIntentos(usuarioId: number): void {
   db.prepare('DELETE FROM intentos_login WHERE usuario_id = ?').run(usuarioId);
 }
 
-/** Cambia el PIN del admin (ya hasheado) y baja la bandera de cambio forzado. */
-export function cambiarPinAdmin(usuarioId: number, pinNuevo: string): void {
+/** Cambia el PIN del usuario (ya hasheado) y baja la bandera de cambio forzado. */
+export function cambiarPinUsuario(usuarioId: number, pinNuevo: string): void {
   db.prepare('UPDATE usuarios SET pin_hash = ?, debe_cambiar_pin = 0 WHERE id = ?').run(
     hashearPin(pinNuevo),
     usuarioId

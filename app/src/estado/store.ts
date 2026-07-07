@@ -30,7 +30,7 @@ interface EstadoApp {
   cargarSesion: () => Promise<void>;
   entrarAdmin: (pin: string) => Promise<void>;
   entrarAuxiliar: (usuarioId: number, pin: string) => Promise<void>;
-  cambiarPinAdmin: (pinNuevo: string) => Promise<void>;
+  cambiarMiPin: (pinNuevo: string) => Promise<void>;
   salir: () => Promise<void>;
 
   // Datos
@@ -83,13 +83,16 @@ export const useStore = create<EstadoApp>((set, get) => ({
   },
 
   entrarAuxiliar: async (usuarioId, pin) => {
-    const { usuario } = await api.post<LoginResp>('/api/auth/auxiliar', { usuarioId, pin });
-    set({ sesion: usuario, debeCambiarPin: false });
+    const { usuario, debe_cambiar_pin } = await api.post<LoginResp>('/api/auth/auxiliar', {
+      usuarioId,
+      pin
+    });
+    set({ sesion: usuario, debeCambiarPin: Boolean(debe_cambiar_pin) });
     conectarSocket();
   },
 
-  cambiarPinAdmin: async (pinNuevo) => {
-    await api.post('/api/auth/admin/cambiar-pin', { pin_nuevo: pinNuevo });
+  cambiarMiPin: async (pinNuevo) => {
+    await api.post('/api/auth/cambiar-pin', { pin_nuevo: pinNuevo });
     set({ debeCambiarPin: false });
   },
 

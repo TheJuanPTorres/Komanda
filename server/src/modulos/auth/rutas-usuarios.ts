@@ -9,8 +9,10 @@ import { requiereRol } from './middleware.js';
 import {
   asignarPinAuxiliar,
   buscarAuxiliar,
+  buscarPorId,
   crearAuxiliar,
   desactivarAuxiliar,
+  limpiarIntentos,
   listarAuxiliaresActivos,
   renombrarAuxiliar
 } from './servicio.js';
@@ -68,4 +70,20 @@ export async function rutasUsuarios(app: FastifyInstance): Promise<void> {
     desactivarAuxiliar(id);
     return { ok: true };
   });
+
+  // POST /api/usuarios/:id/desbloquear — limpia el contador de bloqueo por
+  // cuenta al instante (admin). Sirve para cualquier usuario (auxiliar o la
+  // propia cuenta admin): si alguien falla 8 PIN a propósito en hora pico, el
+  // admin lo libera sin esperar los 15 minutos.
+  app.post(
+    '/api/usuarios/:id/desbloquear',
+    { preHandler: requiereRol('admin'), config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (req) => {
+      const { id } = idParam.parse(req.params);
+      const usuario = buscarPorId(id);
+      if (!usuario || usuario.activo !== 1) throw errores.noEncontrado('Esa cuenta no existe.');
+      limpiarIntentos(id);
+      return { ok: true };
+    }
+  );
 }

@@ -13,11 +13,11 @@ import type { LoginResp, Sesion } from '@pos/shared';
 import { config } from '../../config.js';
 import { errores } from '../../lib/errores.js';
 import { verificarPin } from '../../lib/pin.js';
-import { requiereRol, requiereSesion } from './middleware.js';
+import { requiereSesion } from './middleware.js';
 import {
   buscarAdmin,
   buscarPorId,
-  cambiarPinAdmin,
+  cambiarPinUsuario,
   cuentaBloqueada,
   limpiarIntentos,
   registrarIntentoFallido
@@ -28,8 +28,9 @@ const loginAuxiliarSchema = z.object({
   usuarioId: z.number().int().positive('Selecciona un auxiliar válido.'),
   pin: z.string().min(1, 'Escribe tu PIN.')
 });
+// Solo dígitos; la longitud exacta se valida por rol en el handler.
 const cambiarPinSchema = z.object({
-  pin_nuevo: z.string().regex(/^\d{6,}$/, 'El PIN debe tener al menos 6 dígitos.')
+  pin_nuevo: z.string().regex(/^\d+$/, 'El PIN son solo dígitos.')
 });
 
 // Opciones de la cookie de sesión, centralizadas para setear y borrar igual.
@@ -88,25 +89,32 @@ export async function rutasAuth(app: FastifyInstance): Promise<void> {
       }
       limpiarIntentos(usuario.id);
       const sesion: Sesion = { id: usuario.id, nombre: usuario.nombre, rol: 'auxiliar' };
-      return iniciarSesion(reply, sesion);
+      const resp = iniciarSesion(reply, sesion);
+      return { ...resp, debe_cambiar_pin: usuario.debe_cambiar_pin === 1 };
     }
   );
 
-  // POST /api/auth/admin/cambiar-pin — el admin define un PIN nuevo (≥ 6).
-  app.post('/api/auth/admin/cambiar-pin', { preHandler: requiereRol('admin') }, async (req) => {
+  // POST /api/auth/cambiar-pin — el usuario de la sesión define su PIN nuevo.
+  // Admin: ≥ 6 dígitos; auxiliar: exactamente 4. Baja debe_cambiar_pin.
+  app.post('/api/auth/cambiar-pin', { preHandler: requiereSesion }, async (req) => {
     const { pin_nuevo } = cambiarPinSchema.parse(req.body);
-    cambiarPinAdmin(req.user.id, pin_nuevo);
+    if (req.user.rol === 'admin') {
+      if (pin_nuevo.length < 6) throw errores.pinCorto(6);
+    } else if (pin_nuevo.length !== 4) {
+      throw errores.pinCorto(4);
+    }
+    cambiarPinUsuario(req.user.id, pin_nuevo);
     return { ok: true };
   });
 
-  // GET /api/auth/sesion — usuario de la sesión actual (o 401). Incluye si el
-  // admin todavía debe renovar su PIN corto.
+  // GET /api/auth/sesion — usuario de la sesión actual (o 401). Incluye si
+  // todavía debe renovar su PIN (admin o auxiliar).
   app.get('/api/auth/sesion', { preHandler: requiereSesion }, async (req) => {
     const actual = buscarPorId(req.user.id);
     const sesion: Sesion = { id: req.user.id, nombre: req.user.nombre, rol: req.user.rol };
     return {
       usuario: sesion,
-      debe_cambiar_pin: actual?.rol === 'admin' && actual.debe_cambiar_pin === 1
+      debe_cambiar_pin: actual?.debe_cambiar_pin === 1
     } satisfies LoginResp;
   });
 

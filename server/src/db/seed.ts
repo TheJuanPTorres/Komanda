@@ -55,11 +55,12 @@ const CATEGORIAS_DEMO = ['Hamburguesas', 'Perros y salchipapas', 'Bebidas'];
 const sembrar = db.transaction(() => {
   // ── Usuarios (idempotente por nombre) ───────────────────────────────────
   const existeUsuario = db.prepare('SELECT 1 FROM usuarios WHERE nombre = ?');
+  // Todos nacen con debe_cambiar_pin=1: el PIN sembrado es solo para el primer
+  // acceso; en producción el primer login OBLIGA a definir un PIN real (admin
+  // ≥ 6 dígitos, auxiliar 4). Así no queda ningún PIN de fábrica en internet.
   const insUsuario = db.prepare(
-    'INSERT INTO usuarios (nombre, rol, pin_hash) VALUES (?, ?, ?)'
+    'INSERT INTO usuarios (nombre, rol, pin_hash, debe_cambiar_pin) VALUES (?, ?, ?, 1)'
   );
-  // En internet público todos entran con PIN. El admin arranca con un PIN de 6
-  // dígitos (ya cumple el mínimo); los auxiliares demo con 4 dígitos.
   const usuarios: [string, 'admin' | 'auxiliar', string][] = [
     ['Administrador', 'admin', hashearPin('123456')],
     ['Carolina', 'auxiliar', hashearPin('1111')],
@@ -72,7 +73,7 @@ const sembrar = db.transaction(() => {
       nuevosUsuarios++;
     }
   }
-  console.log(`Usuarios: ${nuevosUsuarios} nuevo(s) (admin PIN=123456, auxiliares 1111/2222 si es 1ª vez).`);
+  console.log(`Usuarios: ${nuevosUsuarios} nuevo(s). PIN inicial admin=123456, aux=1111/2222; TODOS deben cambiarlo al primer login.`);
 
   // ── Categorías reales (idempotente por nombre; reactiva si estaba oculta) ─
   const idCategoria = (nombre: string): number => {

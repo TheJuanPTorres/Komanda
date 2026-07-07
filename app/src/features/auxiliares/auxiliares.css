@@ -56,3 +56,23 @@
   background: var(--coma);
   color: var(--tinta-fuerte);
 }
+
+/* Fila de la cuenta de administrador (desbloqueo). */
+.aux-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  background: var(--superficie-1);
+  border: 1px dashed var(--linea-fuerte);
+  border-radius: var(--radio-l);
+}
+.aux-admin__txt {
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 13px;
+  color: var(--tinta-media);
+}

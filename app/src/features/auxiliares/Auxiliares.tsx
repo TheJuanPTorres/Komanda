@@ -1,11 +1,12 @@
 // Administración de auxiliares (solo admin): crear, renombrar, asignar PIN y
 // desactivar. En internet público cada auxiliar entra con nombre + PIN de 4.
 import { useEffect, useState } from 'react';
-import { KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
+import { KeyRound, LockOpen, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Usuario } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
-import { Boton, Campo, Modal } from '../../design-system/index.js';
+import { useStore } from '../../estado/store.js';
+import { Boton, Campo, Modal, Toast } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
 import { NavAdmin } from '../comunes/NavAdmin.js';
 import { Cargando } from '../comunes/Cargando.js';
@@ -141,11 +142,30 @@ function EditorPin({
 
 export function Auxiliares() {
   const navegar = useNavigate();
+  const sesion = useStore((s) => s.sesion);
   const [auxiliares, setAuxiliares] = useState<Usuario[] | null>(null);
   const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
   const [editando, setEditando] = useState<Usuario | 'nuevo' | undefined>(undefined);
   const [pinDe, setPinDe] = useState<Usuario | null>(null);
   const [porEliminar, setPorEliminar] = useState<Usuario | null>(null);
+
+  // Muestra un aviso breve (toast) y lo oculta solo.
+  function mostrarAviso(texto: string) {
+    setAviso(texto);
+    window.setTimeout(() => setAviso(''), 2500);
+  }
+
+  // Limpia el contador de bloqueo por cuenta al instante (auxiliar o admin).
+  async function desbloquear(id: number, nombre: string) {
+    setError('');
+    try {
+      await api.post(`/api/usuarios/${id}/desbloquear`);
+      mostrarAviso(`Cuenta desbloqueada: ${nombre}`);
+    } catch (e) {
+      setError(e instanceof ErrorApi ? e.message : 'No se pudo desbloquear.');
+    }
+  }
 
   function recargar() {
     api
@@ -198,6 +218,17 @@ export function Auxiliares() {
       <div className="pagina__cuerpo">
         {error && <div className="aviso-error">{error}</div>}
 
+        {/* Desbloqueo de la cuenta admin (por si la bloquean con intentos). */}
+        {sesion && (
+          <div className="aux-admin">
+            <span className="aux-admin__txt">Cuenta de administrador</span>
+            <Boton variante="secundario" onClick={() => desbloquear(sesion.id, 'Administrador')}>
+              <LockOpen size={20} strokeWidth={2.25} />
+              Desbloquear
+            </Boton>
+          </div>
+        )}
+
         {(auxiliares ?? []).length === 0 ? (
           <p className="vacio">
             <strong>Nadie registrado.</strong>
@@ -210,6 +241,13 @@ export function Auxiliares() {
                 <span className="aux__inicial">{a.nombre.trim().charAt(0).toUpperCase()}</span>
                 <span className="aux__nombre">{a.nombre}</span>
                 {!a.tiene_pin && <span className="aux__sinpin">Sin PIN</span>}
+                <Boton
+                  variante="secundario"
+                  onClick={() => desbloquear(a.id, a.nombre)}
+                  aria-label="Desbloquear"
+                >
+                  <LockOpen size={20} strokeWidth={2.25} />
+                </Boton>
                 <Boton variante="secundario" onClick={() => setPinDe(a)} aria-label="Asignar PIN">
                   <KeyRound size={20} strokeWidth={2.25} />
                 </Boton>
@@ -260,6 +298,8 @@ export function Auxiliares() {
           </div>
         </Modal>
       )}
+
+      {aviso && <Toast tono="exito">{aviso}</Toast>}
     </div>
   );
 }

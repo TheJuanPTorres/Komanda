@@ -27,7 +27,7 @@ export function App() {
     cargarSesion();
   }, [cargarSesion]);
 
-  const forzarCambioPin = sesion?.rol === 'admin' && debeCambiarPin;
+  const forzarCambioPin = Boolean(sesion) && debeCambiarPin;
 
   return (
     <>
