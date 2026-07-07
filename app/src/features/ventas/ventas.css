@@ -1,0 +1,174 @@
+/* ── Barra de filtros ─────────────────────────────────────────────────── */
+.vf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+.vf__fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+.vf__sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--linea);
+  margin: 0 var(--esp-1);
+}
+
+/* ── Franja de agregados ──────────────────────────────────────────────── */
+.vagg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--esp-2);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--superficie-nocturna);
+  border-radius: var(--radio-l);
+}
+.vagg__celda {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  text-align: center;
+}
+.vagg__etq {
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  color: var(--coma);
+}
+.vagg__num {
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: clamp(18px, 4vw, 26px);
+  color: var(--tinta-sobre-nocturno);
+}
+
+/* ── Listado ──────────────────────────────────────────────────────────── */
+.vlist {
+  display: flex;
+  flex-direction: column;
+}
+.vrow {
+  display: grid;
+  grid-template-columns: 96px 1fr auto auto auto;
+  align-items: center;
+  gap: var(--esp-3);
+  width: 100%;
+  padding: var(--esp-3) var(--esp-2);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--linea);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--fuente-ui);
+}
+.vrow:active {
+  background: rgba(21, 17, 10, 0.05);
+}
+.vrow__fecha {
+  font-family: var(--fuente-datos);
+  font-size: 12px;
+  color: var(--tinta-suave);
+}
+.vrow__ref {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--tinta-fuerte);
+}
+.vrow__corr {
+  color: #b58900;
+}
+.vrow__aux {
+  font-size: 13px;
+  color: var(--tinta-media);
+}
+.vrow__metodos {
+  display: inline-flex;
+  gap: var(--esp-1);
+  color: var(--tinta-media);
+}
+.vrow__cancel {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  color: var(--pare);
+}
+.vrow__total {
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--tinta-fuerte);
+  text-align: right;
+  min-width: 84px;
+}
+.vlist__fin {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  font-family: var(--fuente-ui);
+  font-size: 12px;
+  color: var(--tinta-suave);
+}
+
+/* En móvil la fila se compacta (oculta el auxiliar). */
+@media (max-width: 620px) {
+  .vrow {
+    grid-template-columns: 78px 1fr auto auto;
+  }
+  .vrow__aux {
+    display: none;
+  }
+}
+
+/* ── Ficha ────────────────────────────────────────────────────────────── */
+.vficha__cuando {
+  font-family: var(--fuente-ui);
+  font-size: 14px;
+  color: var(--tinta-media);
+  margin: 0;
+  text-transform: capitalize;
+}
+.vficha__items {
+  border-top: 1px solid var(--linea);
+}
+.vficha__items .pat-linea + .pat-linea {
+  border-top: 1px solid var(--linea);
+}
+.vficha__pagos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+.vficha__pago {
+  display: flex;
+  align-items: baseline;
+  gap: var(--esp-3);
+  font-family: var(--fuente-ui);
+  font-size: 14px;
+  color: var(--tinta-fuerte);
+}
+.vficha__ref {
+  font-family: var(--fuente-datos);
+  font-size: 12px;
+  color: var(--tinta-suave);
+}
+.vficha__monto {
+  margin-left: auto;
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.vficha__historia {
+  margin-top: var(--esp-2);
+}

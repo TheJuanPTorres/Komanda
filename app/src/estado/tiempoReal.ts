@@ -32,9 +32,18 @@ export function iniciarTiempoReal(): void {
     aplicarPedido({ pedido: p.pedido, items: p.items, total: calcularTotal(p.items) });
   };
 
+  // Al cobrar, el admin refresca el Pulso del día (ventas y # de pedidos).
+  const refrescarPulsoAdmin = () => {
+    const { sesion, cargarPulso } = useStore.getState();
+    if (sesion?.rol === 'admin') cargarPulso().catch(() => {});
+  };
+
   socket.on(EVENTOS.PEDIDO_CREADO, onCreadoOActualizado);
   socket.on(EVENTOS.PEDIDO_ACTUALIZADO, onCreadoOActualizado);
-  socket.on(EVENTOS.PEDIDO_COBRADO, (p: PedidoCobradoPayload) => quitarPedidoLocal(p.pedidoId));
+  socket.on(EVENTOS.PEDIDO_COBRADO, (p: PedidoCobradoPayload) => {
+    quitarPedidoLocal(p.pedidoId);
+    refrescarPulsoAdmin();
+  });
   socket.on(EVENTOS.PEDIDO_CANCELADO, (p: PedidoCanceladoPayload) => {
     quitarPedidoLocal(p.pedidoId);
     // Al cancelarse, sus solicitudes pendientes quedaron anuladas.

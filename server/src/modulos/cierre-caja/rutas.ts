@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { CierrePreview } from '@pos/shared';
 import { requiereRol } from '../auth/middleware.js';
-import { previsualizarCierre, registrarCierre } from './servicio.js';
+import { previsualizarCierre, registrarCierre, resumenTexto } from './servicio.js';
 
 const cierreSchema = z.object({
   base_inicial: z.number().int().min(0, 'La base no puede ser negativa.'),
@@ -15,6 +15,11 @@ export async function rutasCierreCaja(app: FastifyInstance): Promise<void> {
   // GET /api/cierre-caja/hoy — agregados del día (o el cierre ya hecho).
   app.get('/api/cierre-caja/hoy', { preHandler: requiereRol('admin') }, async () => {
     return { preview: previsualizarCierre() satisfies CierrePreview };
+  });
+
+  // GET /api/cierre-caja/resumen — texto plano del día para compartir (WhatsApp).
+  app.get('/api/cierre-caja/resumen', { preHandler: requiereRol('admin') }, async () => {
+    return { texto: resumenTexto() };
   });
 
   // POST /api/cierre-caja — registra el cierre de hoy (uno por día).

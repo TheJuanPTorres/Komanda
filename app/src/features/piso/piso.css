@@ -48,3 +48,56 @@
 .piso__nuevo:active {
   transform: scale(0.99);
 }
+
+/* ── Pulso del día (franja admin en vivo) ─────────────────────────────── */
+.pulso {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--esp-2);
+}
+@media (max-width: 620px) {
+  .pulso {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.pulso__celda {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--esp-3) var(--esp-2);
+  background: var(--superficie-nocturna);
+  border: none;
+  border-radius: var(--radio-l);
+  min-height: 84px;
+}
+.pulso__num {
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: clamp(20px, 4.5vw, 30px);
+  color: var(--tinta-sobre-nocturno);
+  line-height: 1.05;
+}
+.pulso__etq {
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  color: var(--coma);
+}
+.pulso__celda--accion {
+  cursor: default;
+  font: inherit;
+}
+.pulso__celda--alerta {
+  cursor: pointer;
+  outline: 2px solid var(--coma);
+  outline-offset: -2px;
+}
+.pulso__celda--alerta .pulso__num {
+  color: var(--coma);
+}

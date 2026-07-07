@@ -291,6 +291,77 @@ export interface RangoFechas {
   hasta: string;
 }
 
+// ── Explorador de ventas (v1.5-B, Parte 2) ───────────────────────────────
+
+export type EstadoVenta = 'cobrado' | 'cancelado';
+
+// Filtros combinables del explorador. Las fechas son días operativos (Bogotá,
+// YYYY-MM-DD). El cursor pagina por fecha de cierre (ver RespVentas.cursor).
+export interface FiltroVentas {
+  desde?: string;
+  hasta?: string;
+  auxiliar_id?: number;
+  producto_id?: number;
+  metodo?: MetodoPago;
+  tipo?: TipoPedido;
+  estado?: EstadoVenta;
+  con_correcciones?: boolean;
+  cursor?: string;
+}
+
+// Una fila del listado (compacta).
+export interface VentaResumen {
+  id: number;
+  tipo: TipoPedido;
+  mesa_numero: number | null;
+  turno: number | null;
+  cliente_nombre: string | null;
+  estado: EstadoVenta;
+  creado_en: string;
+  cerrado_en: string | null;
+  total: number; // cobrado: suma de pagos; cancelado: 0
+  metodos: MetodoPago[];
+  auxiliar_nombre: string;
+  con_correcciones: boolean;
+}
+
+export interface AgregadosVentas {
+  numero: number; // # de ventas cobradas del filtro
+  total: number; // suma cobrada del filtro
+  ticket_promedio: number;
+}
+
+// Pulso del día (franja en vivo del panel admin).
+export interface PulsoDia {
+  ventas_hoy: number; // dinero cobrado hoy (día operativo)
+  pedidos_hoy: number; // # de pedidos cobrados hoy
+  abiertos: number; // pedidos abiertos ahora mismo
+  correcciones: number; // solicitudes pendientes ahora mismo
+}
+
+export interface RespVentas {
+  ventas: VentaResumen[];
+  agregados: AgregadosVentas;
+  cursor: string | null; // siguiente página; null si no hay más
+}
+
+export interface VentaItemDetalle {
+  producto_id: number;
+  nombre: string;
+  cantidad: number;
+  precio_unitario: number;
+  costo_unitario: number;
+  subtotal: number;
+}
+
+// Ficha completa de una venta.
+export interface VentaDetalle {
+  venta: VentaResumen;
+  items: VentaItemDetalle[];
+  pagos: Pago[];
+  eventos: EventoPedido[];
+}
+
 export interface MargenProducto {
   producto_id: number;
   nombre: string;

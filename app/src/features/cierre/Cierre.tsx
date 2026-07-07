@@ -3,6 +3,7 @@
 // se cerró, se muestra en solo lectura.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Share2 } from 'lucide-react';
 import type { CierreCaja, CierrePreview } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
 import { aEnteroDesdeTexto } from '../../lib/numeros.js';
@@ -77,6 +78,23 @@ export function Cierre() {
       .catch(() => setError('No se pudo cargar el cierre.'));
   }, []);
 
+  // Comparte el resumen del día por WhatsApp (el texto lo arma el servidor).
+  async function compartirResumen() {
+    try {
+      const { texto } = await api.get<{ texto: string }>('/api/cierre-caja/resumen');
+      window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener');
+    } catch {
+      setError('No se pudo preparar el resumen.');
+    }
+  }
+
+  const botonCompartir = (
+    <Boton variante="secundario" bloque onClick={compartirResumen}>
+      <Share2 size={18} strokeWidth={2.25} />
+      Compartir resumen
+    </Boton>
+  );
+
   if (!preview) return <Cargando />;
 
   const yaCerrado = hecho ?? preview.cierre;
@@ -116,6 +134,7 @@ export function Cierre() {
           <>
             <div className="cierre-banner">La caja de hoy ya fue cerrada.</div>
             <ResumenCierre c={yaCerrado} />
+            {botonCompartir}
             <Boton flujo bloque onClick={() => navegar('/')}>
               Volver al piso
             </Boton>
@@ -175,6 +194,7 @@ export function Cierre() {
             <Boton flujo bloque disabled={ocupado} onClick={cerrar}>
               Cerrar caja
             </Boton>
+            {botonCompartir}
           </>
         )}
       </div>

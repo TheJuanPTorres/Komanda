@@ -101,6 +101,35 @@ export function previsualizarCierre(): CierrePreview {
   };
 }
 
+// Texto plano para compartir por WhatsApp. Usa el cierre si ya está hecho; si
+// no, la vista previa del día. El front lo pasa a https://wa.me/?text=...
+const pesos = (n: number): string => `$${n.toLocaleString('es-CO')}`;
+
+export function resumenTexto(): string {
+  const p = previsualizarCierre();
+  const total = p.ventas_efectivo + p.ventas_qr;
+  const L: string[] = [];
+  L.push('*PARE Y COMA*');
+  L.push(`Resumen del día ${p.fecha}`);
+  L.push('');
+  L.push(`Ventas: ${pesos(total)}`);
+  L.push(`• Efectivo: ${pesos(p.ventas_efectivo)}`);
+  L.push(`• QR Bre-B: ${pesos(p.ventas_qr)}`);
+  L.push(`Gastos en efectivo: ${pesos(p.gastos_efectivo)}`);
+  L.push(`Pedidos cobrados: ${p.num_pedidos}`);
+  if (p.cierre) {
+    L.push('');
+    L.push(`Efectivo esperado: ${pesos(p.cierre.efectivo_esperado)}`);
+    L.push(`Efectivo contado: ${pesos(p.cierre.efectivo_contado)}`);
+    const d = p.cierre.diferencia;
+    L.push(`Diferencia: ${d === 0 ? 'cuadró exacto' : (d > 0 ? '+' : '') + pesos(d)}`);
+  } else if (p.pedidos_abiertos > 0) {
+    L.push('');
+    L.push(`(Aún hay ${p.pedidos_abiertos} pedido(s) abierto(s); la caja no se ha cerrado.)`);
+  }
+  return L.join('\n');
+}
+
 export interface DatosCierre {
   base_inicial: number;
   efectivo_contado: number;

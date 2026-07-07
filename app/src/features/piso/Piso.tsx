@@ -9,6 +9,7 @@ import { ErrorApi } from '../../lib/api.js';
 import { Boton, Campo, Modal, TarjetaMesa } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
 import { NavAdmin } from '../comunes/NavAdmin.js';
+import { PulsoDelDia } from './PulsoDelDia.js';
 import './piso.css';
 
 const MESAS = [1, 2, 3, 4];
@@ -76,6 +77,9 @@ export function Piso() {
 
       <div className="piso__cuerpo">
         {error && <div className="aviso-error">{error}</div>}
+
+        {/* Pulso del día: solo el admin, en vivo. */}
+        {sesion?.rol === 'admin' && <PulsoDelDia />}
 
         <section>
           <h2 className="seccion-titulo">Mesas</h2>

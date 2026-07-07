@@ -9,6 +9,7 @@ import type {
   PedidoConItems,
   PedidoItem,
   Producto,
+  PulsoDia,
   Sesion,
   SolicitarCorreccionReq,
   SolicitudCorreccion
@@ -31,6 +32,9 @@ interface EstadoApp {
   correcciones: SolicitudCorreccion[];
   // Aviso breve global (toast), p. ej. "Tu corrección fue aprobada".
   aviso: string | null;
+  // Pulso del día (dinero y # de ventas de hoy); admin. Abiertos y correcciones
+  // se derivan en vivo de `pedidos` y `correcciones`.
+  pulso: PulsoDia | null;
 
   // Sesión
   cargarSesion: () => Promise<void>;
@@ -62,6 +66,7 @@ interface EstadoApp {
   aprobarCorreccion: (id: number) => Promise<void>;
   rechazarCorreccion: (id: number) => Promise<void>;
   mostrarAviso: (texto: string) => void;
+  cargarPulso: () => Promise<void>;
 
   // Aplicados por tiempo real o por respuestas de la API (idempotentes).
   aplicarPedido: (p: PedidoConItems) => void;
@@ -82,6 +87,7 @@ export const useStore = create<EstadoApp>((set, get) => ({
   pedidos: [],
   correcciones: [],
   aviso: null,
+  pulso: null,
 
   cargarSesion: async () => {
     try {
@@ -118,7 +124,7 @@ export const useStore = create<EstadoApp>((set, get) => ({
   salir: async () => {
     await api.post('/api/auth/salir');
     desconectarSocket();
-    set({ sesion: null, debeCambiarPin: false, pedidos: [], menu: [], correcciones: [], aviso: null });
+    set({ sesion: null, debeCambiarPin: false, pedidos: [], menu: [], correcciones: [], aviso: null, pulso: null });
   },
 
   cargarMenu: async () => {
@@ -219,6 +225,11 @@ export const useStore = create<EstadoApp>((set, get) => ({
     window.setTimeout(() => {
       if (get().aviso === texto) set({ aviso: null });
     }, 3000);
+  },
+
+  cargarPulso: async () => {
+    const pulso = await api.get<PulsoDia>('/api/pulso');
+    set({ pulso });
   },
 
   aplicarCorreccion: (s) => {

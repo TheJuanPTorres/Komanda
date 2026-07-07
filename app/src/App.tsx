@@ -22,6 +22,7 @@ export function App() {
   const sesion = useStore((s) => s.sesion);
   const debeCambiarPin = useStore((s) => s.debeCambiarPin);
   const cargarCorrecciones = useStore((s) => s.cargarCorrecciones);
+  const cargarPulso = useStore((s) => s.cargarPulso);
   const aviso = useStore((s) => s.aviso);
   const [splash, setSplash] = useState(() => !sessionStorage.getItem(CLAVE_SPLASH));
 
@@ -30,10 +31,13 @@ export function App() {
     cargarSesion();
   }, [cargarSesion]);
 
-  // El admin mantiene la lista de correcciones pendientes (badge + sección).
+  // El admin mantiene la lista de correcciones pendientes y el pulso del día.
   useEffect(() => {
-    if (sesion?.rol === 'admin') cargarCorrecciones().catch(() => {});
-  }, [sesion?.rol, cargarCorrecciones]);
+    if (sesion?.rol === 'admin') {
+      cargarCorrecciones().catch(() => {});
+      cargarPulso().catch(() => {});
+    }
+  }, [sesion?.rol, cargarCorrecciones, cargarPulso]);
 
   const forzarCambioPin = Boolean(sesion) && debeCambiarPin;
 

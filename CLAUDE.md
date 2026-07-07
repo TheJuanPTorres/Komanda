@@ -32,6 +32,16 @@ Nada se ejecuta sin aprobación del admin.
 - NO se puede cobrar con correcciones pendientes (409 COBRO_CON_PENDIENTES).
 - Cancelar un pedido anula ('anulada') sus solicitudes pendientes en la misma tx.
 
+## Explorador de ventas (v1.5-B, Parte 2-3) — módulo `ventas`
+Solo admin, solo lectura. GET /api/ventas (pedidos cobrados+cancelados, filtros
+combinables desde/hasta/auxiliar/producto/metodo/tipo/estado/con_correcciones,
+paginación por cursor 50/pág. sobre cerrado_en, agregados de SOLO cobrados).
+GET /api/ventas/:id (ficha: items con snapshots, pagos, línea de tiempo completa
+de la bitácora). GET /api/ventas.csv (export del filtro, BOM UTF-8 + CRLF,
+rate-limit propio). GET /api/pulso (franja en vivo del admin: ventas y # de hoy,
+abiertos, correcciones pendientes). GET /api/cierre-caja/resumen (texto plano
+para compartir por wa.me). Fronteras de día SIEMPRE vía lib/fechas.ts.
+
 ## Stack (no cambiar sin justificación explícita)
 - Node.js 20+, TypeScript estricto, Fastify
 - SQLite con better-sqlite3 (síncrono, transacciones nativas)
@@ -66,7 +76,7 @@ Nada se ejecuta sin aprobación del admin.
 
 ## Estructura
 shared/src/{types.ts, eventos.ts}
-server/src/{index.ts, db/, modulos/{auth,productos,pedidos,cobros,gastos,cierre-caja,reportes}, ws/, lib/}
+server/src/{index.ts, db/, modulos/{auth,productos,pedidos,cobros,gastos,cierre-caja,reportes,correcciones,ventas}, ws/, lib/}
 server/data/pos.db   ← respaldar = copiar este archivo
 app/src/{design-system/{tokens.css,primitivas/,patrones/}, features/, lib/, rutas.tsx}
 

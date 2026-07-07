@@ -2,11 +2,12 @@
 // TODAS las pantallas de admin para poder saltar entre secciones sin volver al
 // piso. Resalta la sección actual. Los auxiliares solo ven "Salir".
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, ClipboardList, Lock, LogOut, Package, Users, Wallet } from 'lucide-react';
+import { BarChart3, ClipboardList, Lock, LogOut, Package, ShoppingBag, Users, Wallet } from 'lucide-react';
 import { useStore } from '../../estado/store.js';
 import { Boton } from '../../design-system/index.js';
 
 const SECCIONES = [
+  { ruta: '/ventas', etiqueta: 'Ventas', Icono: ShoppingBag },
   { ruta: '/productos', etiqueta: 'Productos', Icono: Package },
   { ruta: '/auxiliares', etiqueta: 'Auxiliares', Icono: Users },
   { ruta: '/gastos', etiqueta: 'Gastos', Icono: Wallet },
