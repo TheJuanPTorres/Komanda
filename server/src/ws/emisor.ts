@@ -4,6 +4,8 @@
 import type { Server } from 'socket.io';
 import {
   EVENTOS,
+  type CorreccionResueltaPayload,
+  type CorreccionSolicitadaPayload,
   type PedidoActualizadoPayload,
   type PedidoCanceladoPayload,
   type PedidoCobradoPayload,
@@ -38,5 +40,11 @@ export const emisor = {
   },
   productoActualizado(payload: ProductoActualizadoPayload): void {
     emitir(EVENTOS.PRODUCTO_ACTUALIZADO, payload);
+  },
+  correccionSolicitada(payload: CorreccionSolicitadaPayload): void {
+    emitir(EVENTOS.CORRECCION_SOLICITADA, payload);
+  },
+  correccionResuelta(payload: CorreccionResueltaPayload): void {
+    emitir(EVENTOS.CORRECCION_RESUELTA, payload);
   }
 } as const;

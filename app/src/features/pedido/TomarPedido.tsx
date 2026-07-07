@@ -20,6 +20,7 @@ import { Encabezado } from '../comunes/Encabezado.js';
 import { Cargando } from '../comunes/Cargando.js';
 import { CobroModal } from '../cobro/CobroModal.js';
 import { HistorialPedido } from './HistorialPedido.js';
+import { SolicitarCorreccionModal } from './SolicitarCorreccionModal.js';
 import './pedido.css';
 
 export function TomarPedido() {
@@ -37,16 +38,28 @@ export function TomarPedido() {
   const quitarItem = useStore((s) => s.quitarItem);
   const cancelarPedido = useStore((s) => s.cancelarPedido);
   const aplicarPedido = useStore((s) => s.aplicarPedido);
+  const correcciones = useStore((s) => s.correcciones);
+  const cargarCorreccionesPedido = useStore((s) => s.cargarCorreccionesPedido);
 
   const pedido = pedidos.find((p) => p.pedido.id === pedidoId);
   const [buscando, setBuscando] = useState(!pedido);
   const [error, setError] = useState('');
   const [cobrando, setCobrando] = useState(false);
   const [porEliminar, setPorEliminar] = useState<PedidoItem | null>(null);
+  const [porCorregir, setPorCorregir] = useState<PedidoItem | null>(null);
+
+  // Solicitudes pendientes de ESTE pedido (para el distintivo y el bloqueo de cobro).
+  const pendientesPedido = correcciones.filter((c) => c.pedido_id === pedidoId);
+  const itemsPendientes = new Set(pendientesPedido.map((c) => c.item_id));
 
   useEffect(() => {
     if (menu.length === 0) cargarMenu().catch(() => {});
   }, [menu.length, cargarMenu]);
+
+  // Carga las correcciones pendientes de este pedido (se mantienen por WS).
+  useEffect(() => {
+    cargarCorreccionesPedido(pedidoId).catch(() => {});
+  }, [pedidoId, cargarCorreccionesPedido]);
 
   useEffect(() => {
     if (pedido) {
@@ -149,14 +162,17 @@ export function TomarPedido() {
                   cantidad={it.cantidad}
                   nombre={it.nombre_producto}
                   subtotal={it.precio_unitario * it.cantidad}
-                  // Auxiliares y admin corrigen el pedido abierto.
+                  pendiente={itemsPendientes.has(it.id)}
+                  // Ambos pueden AGREGAR. El admin corrige directo; el auxiliar
+                  // SOLICITA (reducir/eliminar pasa por aprobación).
+                  onMas={() => conManejo(() => agregarItem(p.id, it.producto_id))}
                   onMenos={
-                    it.cantidad > 1
+                    esAdmin && it.cantidad > 1
                       ? () => conManejo(() => cambiarCantidad(p.id, it.id, it.cantidad - 1))
                       : undefined
                   }
-                  onMas={() => conManejo(() => agregarItem(p.id, it.producto_id))}
-                  onEliminar={() => setPorEliminar(it)}
+                  onEliminar={esAdmin ? () => setPorEliminar(it) : undefined}
+                  onSolicitar={!esAdmin ? () => setPorCorregir(it) : undefined}
                 />
               ))
             )}
@@ -168,7 +184,17 @@ export function TomarPedido() {
             <DisplayTotal monto={total} />
             {esAdmin && (
               <>
-                <Boton flujo bloque disabled={total <= 0} onClick={() => setCobrando(true)}>
+                {pendientesPedido.length > 0 && (
+                  <button className="pedido__aviso-corr" onClick={() => navegar('/correcciones')}>
+                    {pendientesPedido.length} corrección(es) pendiente(s) — resuélvelas para cobrar
+                  </button>
+                )}
+                <Boton
+                  flujo
+                  bloque
+                  disabled={total <= 0 || pendientesPedido.length > 0}
+                  onClick={() => setCobrando(true)}
+                >
                   Cobrar {formatearDinero(total)}
                 </Boton>
                 <Boton
@@ -195,6 +221,14 @@ export function TomarPedido() {
           total={total}
           onCerrar={() => setCobrando(false)}
           onCobrado={() => navegar('/')}
+        />
+      )}
+
+      {porCorregir && (
+        <SolicitarCorreccionModal
+          pedidoId={p.id}
+          item={porCorregir}
+          onCerrar={() => setPorCorregir(null)}
         />
       )}
 

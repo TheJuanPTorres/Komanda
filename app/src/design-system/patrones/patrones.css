@@ -265,6 +265,29 @@
   color: var(--pare);
   border-color: var(--pare);
 }
+.pat-linea__paso--solicitar {
+  color: var(--tinta-fuerte);
+  border-color: var(--coma);
+}
+.pat-linea__paso:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* Distintivo ámbar: el item tiene una corrección pendiente de aprobación. */
+.pat-linea__pendiente {
+  display: inline-block;
+  margin-left: var(--esp-2);
+  vertical-align: middle;
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radio-pill);
+  background: var(--coma);
+  color: var(--tinta-fuerte);
+}
 
 /* ── TecladoPin ────────────────────────────────────────────────────────── */
 .pat-pin {

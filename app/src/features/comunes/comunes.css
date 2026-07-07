@@ -93,6 +93,24 @@
   border-color: transparent;
   color: var(--tinta-fuerte);
 }
+/* Correcciones pendientes: siempre visible con el amarillo de la marca. */
+.nav-admin__item--correcciones {
+  border-color: var(--coma);
+}
+.nav-admin__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radio-pill);
+  background: var(--coma);
+  color: var(--tinta-fuerte);
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 12px;
+}
 /* En pantallas angostas, la nav muestra solo iconos para no saturar. */
 @media (max-width: 720px) {
   .nav-admin__txt {

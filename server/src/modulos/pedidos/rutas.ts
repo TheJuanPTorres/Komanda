@@ -102,8 +102,9 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
     return { pedido };
   });
 
-  // PATCH /api/pedidos/:id/items/:itemId — cambiar cantidad (auxiliar o admin).
-  app.patch('/api/pedidos/:id/items/:itemId', { preHandler: requiereSesion }, async (req) => {
+  // PATCH /api/pedidos/:id/items/:itemId — reducir cantidad (SOLO admin directo;
+  // el auxiliar SOLICITA la corrección, no la ejecuta).
+  app.patch('/api/pedidos/:id/items/:itemId', { preHandler: requiereRol('admin') }, async (req) => {
     const { id, itemId } = itemParams.parse(req.params);
     const { cantidad } = cambiarCantidadSchema.parse(req.body);
     const pedido = cambiarCantidad(id, itemId, cantidad, req.user.id);
@@ -111,9 +112,9 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
     return { pedido };
   });
 
-  // DELETE /api/pedidos/:id/items/:itemId — quitar línea (auxiliar o admin).
+  // DELETE /api/pedidos/:id/items/:itemId — quitar línea (SOLO admin directo).
   // Si el pedido queda vacío, se cancela automáticamente.
-  app.delete('/api/pedidos/:id/items/:itemId', { preHandler: requiereSesion }, async (req) => {
+  app.delete('/api/pedidos/:id/items/:itemId', { preHandler: requiereRol('admin') }, async (req) => {
     const { id, itemId } = itemParams.parse(req.params);
     const { pedido, cancelado } = quitarItem(id, itemId, req.user.id);
     if (cancelado) emisor.pedidoCancelado({ pedidoId: id });

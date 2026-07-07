@@ -389,7 +389,16 @@ export type TipoEventoPedido =
   | 'item_eliminado'
   | 'nota_editada'
   | 'cancelado'
-  | 'cobrado';
+  | 'cobrado'
+  | 'correccion_solicitada'
+  | 'correccion_rechazada';
+
+// Origen opcional de una reducción/eliminación: si vino de aprobar una
+// solicitud de corrección, queda registrado quién la pidió y cuál fue.
+export interface OrigenCorreccion {
+  solicitud_id?: number;
+  solicitado_por?: number;
+}
 
 export interface DetalleCreado {
   tipo_pedido: TipoPedido;
@@ -411,7 +420,7 @@ export interface DetalleItemAgregado {
   precio_unitario: number;
 }
 
-export interface DetalleItemReducido {
+export interface DetalleItemReducido extends OrigenCorreccion {
   producto_id: number;
   nombre: string;
   cantidad_antes: number;
@@ -419,7 +428,7 @@ export interface DetalleItemReducido {
   stock_devuelto: number;
 }
 
-export interface DetalleItemEliminado {
+export interface DetalleItemEliminado extends OrigenCorreccion {
   producto_id: number;
   nombre: string;
   cantidad_eliminada: number;
@@ -442,6 +451,26 @@ export interface DetalleCobrado {
   pagos: { metodo: MetodoPago; monto: number }[];
 }
 
+export type TipoCorreccion = 'reducir' | 'eliminar';
+
+export interface DetalleCorreccionSolicitada {
+  solicitud_id: number;
+  tipo: TipoCorreccion;
+  producto_id: number;
+  nombre: string;
+  cantidad_actual: number;
+  cantidad_nueva?: number; // solo 'reducir'
+  motivo: string;
+}
+
+export interface DetalleCorreccionRechazada {
+  solicitud_id: number;
+  tipo: TipoCorreccion;
+  producto_id: number;
+  nombre: string;
+  motivo: string;
+}
+
 // Unión discriminada por `tipo`: al estrechar por tipo, `detalle` queda tipado.
 export type EventoContenido =
   | { tipo: 'creado'; detalle: DetalleCreado }
@@ -450,7 +479,9 @@ export type EventoContenido =
   | { tipo: 'item_eliminado'; detalle: DetalleItemEliminado }
   | { tipo: 'nota_editada'; detalle: DetalleNotaEditada }
   | { tipo: 'cancelado'; detalle: DetalleCancelado }
-  | { tipo: 'cobrado'; detalle: DetalleCobrado };
+  | { tipo: 'cobrado'; detalle: DetalleCobrado }
+  | { tipo: 'correccion_solicitada'; detalle: DetalleCorreccionSolicitada }
+  | { tipo: 'correccion_rechazada'; detalle: DetalleCorreccionRechazada };
 
 // Un evento tal como lo devuelve la API: contenido + metadatos + nombre de
 // usuario ya resuelto (para la línea de tiempo).
@@ -461,3 +492,41 @@ export type EventoPedido = EventoContenido & {
   usuario_nombre: string;
   creado_en: string;
 };
+
+// ── Correcciones con aprobación (v1.5-B) ─────────────────────────────────
+
+export type EstadoSolicitud = 'pendiente' | 'aprobada' | 'rechazada' | 'anulada';
+
+// El auxiliar solicita reducir (con cantidad_nueva) o eliminar una línea.
+export interface SolicitarCorreccionReq {
+  tipo: TipoCorreccion;
+  cantidad_nueva?: number;
+  motivo?: string;
+}
+
+// Una solicitud tal como la devuelve la API / los eventos WS: incluye el
+// contexto del pedido y del item para pintar la tarjeta del admin sin más
+// consultas. `nombre` y `cantidad_actual` son snapshot del item.
+export interface SolicitudCorreccion {
+  id: number;
+  pedido_id: number;
+  item_id: number;
+  tipo: TipoCorreccion;
+  cantidad_nueva: number | null;
+  motivo: string;
+  estado: EstadoSolicitud;
+  solicitado_por: number;
+  solicitado_por_nombre: string;
+  resuelto_por: number | null;
+  resuelto_por_nombre: string | null;
+  creado_en: string;
+  resuelto_en: string | null;
+  // Contexto del pedido/item (para la tarjeta del admin y el distintivo).
+  producto_id: number;
+  nombre: string;
+  cantidad_actual: number;
+  pedido_tipo: TipoPedido;
+  mesa_numero: number | null;
+  turno: number | null;
+  cliente_nombre: string | null;
+}

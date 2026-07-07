@@ -4,9 +4,15 @@ import type { EventoPedido, TipoEventoPedido } from '@pos/shared';
 import { formatearDinero } from '../design-system/index.js';
 import { turnoBarra } from './etiquetas.js';
 
-// Las correcciones (bajar/quitar) se resaltan distinto en la línea de tiempo.
+// Las correcciones (solicitud, resolución, bajar/quitar) se resaltan en la
+// línea de tiempo con el acento de la marca.
 export function esCorreccion(tipo: TipoEventoPedido): boolean {
-  return tipo === 'item_reducido' || tipo === 'item_eliminado';
+  return (
+    tipo === 'item_reducido' ||
+    tipo === 'item_eliminado' ||
+    tipo === 'correccion_solicitada' ||
+    tipo === 'correccion_rechazada'
+  );
 }
 
 // Describe cómo se cobró, a partir del arreglo de pagos.
@@ -40,5 +46,11 @@ export function describirEvento(e: EventoPedido): string {
         : `${quien} canceló el pedido`;
     case 'cobrado':
       return `${quien} cobró ${formatearDinero(e.detalle.total)} en ${describirPagos(e.detalle.pagos)}`;
+    case 'correccion_solicitada':
+      return e.detalle.tipo === 'reducir'
+        ? `${quien} solicitó bajar ${e.detalle.nombre} a ${e.detalle.cantidad_nueva}`
+        : `${quien} solicitó eliminar ${e.detalle.nombre}`;
+    case 'correccion_rechazada':
+      return `${quien} rechazó la corrección de ${e.detalle.nombre}`;
   }
 }

@@ -8,13 +8,29 @@ Los auxiliares usan celulares (PWA); el admin usa el equipo de caja o su celular
 
 ## Roles
 Dos roles: `admin` y `auxiliar` (el nombre del rol de personal se renombró en
-toda la base y el código). Los auxiliares toman pedidos y pueden CORREGIR pedidos
-ABIERTOS (bajar cantidades y eliminar items agregados por error); no manejan
-dinero. El admin además cobra, cierra y administra.
+toda la base y el código). Los auxiliares toman pedidos y pueden AGREGAR items
+libremente a pedidos ABIERTOS; no manejan dinero. El admin además cobra, cierra,
+administra y APRUEBA correcciones.
 
 ## Regla de negocio SAGRADA
 Solo el rol `admin` puede cobrar y cerrar pedidos. Esta regla se valida SIEMPRE
 en el servidor (middleware de rol en el módulo cobros), nunca solo en la UI.
+
+## Correcciones con aprobación (v1.5-B) — INNEGOCIABLE
+Los auxiliares NO ejecutan reducciones ni eliminaciones de items: las SOLICITAN.
+Nada se ejecuta sin aprobación del admin.
+- `solicitudes_correccion` (tipo reducir/eliminar, estado pendiente/aprobada/
+  rechazada/anulada). Máximo UNA pendiente por item (409 si ya hay).
+- Los endpoints PATCH/DELETE de items son SOLO admin (ejecución directa). El
+  auxiliar usa POST /api/pedidos/:id/items/:itemId/correccion (crea la solicitud
+  + evento `correccion_solicitada`; el item NO cambia todavía).
+- El admin resuelve en /api/correcciones/:id/{aprobar,rechazar}. Aprobar ejecuta
+  la reducción/eliminación real (reutiliza ejecutarReducir/ejecutarEliminar de
+  pedidos/servicio con `origen`), en UNA transacción; los eventos item_reducido/
+  item_eliminado guardan `solicitud_id` y `solicitado_por`, y `usuario_id` es el
+  admin ejecutor. Rechazar registra `correccion_rechazada` y deja el item intacto.
+- NO se puede cobrar con correcciones pendientes (409 COBRO_CON_PENDIENTES).
+- Cancelar un pedido anula ('anulada') sus solicitudes pendientes en la misma tx.
 
 ## Stack (no cambiar sin justificación explícita)
 - Node.js 20+, TypeScript estricto, Fastify

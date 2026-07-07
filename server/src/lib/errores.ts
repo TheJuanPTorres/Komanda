@@ -57,7 +57,19 @@ export const errores = {
   pinCorto: (min: number) =>
     new ErrorApp(400, 'PIN_CORTO', `El PIN debe tener al menos ${min} dígitos.`),
   auxiliarSinPin: () =>
-    new ErrorApp(403, 'AUXILIAR_SIN_PIN', 'Aún no tienes PIN. Pídele al administrador que te asigne uno.')
+    new ErrorApp(403, 'AUXILIAR_SIN_PIN', 'Aún no tienes PIN. Pídele al administrador que te asigne uno.'),
+  solicitudDuplicada: () =>
+    new ErrorApp(409, 'SOLICITUD_DUPLICADA', 'Ya hay una corrección pendiente para ese producto.'),
+  correccionInvalida: (mensaje = 'La corrección solicitada no es válida.') =>
+    new ErrorApp(400, 'CORRECCION_INVALIDA', mensaje),
+  solicitudNoPendiente: () =>
+    new ErrorApp(409, 'SOLICITUD_NO_PENDIENTE', 'Esa solicitud ya fue resuelta.'),
+  cobroConPendientes: () =>
+    new ErrorApp(
+      409,
+      'COBRO_CON_PENDIENTES',
+      'Hay correcciones pendientes en este pedido. Resuélvelas antes de cobrar.'
+    )
 };
 
 export function responderError(

@@ -5,6 +5,7 @@ import type { Pago, PagoReq } from '@pos/shared';
 import { errores } from '../../lib/errores.js';
 import { obtenerPedidoConItems } from '../pedidos/servicio.js';
 import { registrarEvento } from '../pedidos/eventos.js';
+import { hayPendientesEnPedido } from '../correcciones/datos.js';
 
 export interface ResultadoCobro {
   pedidoId: number;
@@ -26,6 +27,8 @@ export function registrarCobro(
     const actual = obtenerPedidoConItems(pedidoId);
     if (!actual) throw errores.pedidoNoEncontrado();
     if (actual.pedido.estado !== 'abierto') throw errores.pedidoNoAbierto();
+    // No se puede cobrar con correcciones pendientes: hay que resolverlas antes.
+    if (hayPendientesEnPedido(pedidoId)) throw errores.cobroConPendientes();
     if (actual.total <= 0) throw errores.cobroVacio();
 
     const suma = pagos.reduce((acc, p) => acc + p.monto, 0);

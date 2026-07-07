@@ -23,6 +23,7 @@ import { rutasCobros } from './modulos/cobros/rutas.js';
 import { rutasGastos } from './modulos/gastos/rutas.js';
 import { rutasCierreCaja } from './modulos/cierre-caja/rutas.js';
 import { rutasReportes } from './modulos/reportes/rutas.js';
+import { rutasCorrecciones } from './modulos/correcciones/rutas.js';
 import { rutasAdmin } from './modulos/admin/rutas.js';
 import { iniciarWebsockets } from './ws/servidor.js';
 
@@ -118,6 +119,7 @@ async function construirServidor() {
   await app.register(rutasGastos);
   await app.register(rutasCierreCaja);
   await app.register(rutasReportes);
+  await app.register(rutasCorrecciones);
   await app.register(rutasAdmin);
 
   // ── Estáticos del front (solo si app/dist existe) + fallback SPA ──────

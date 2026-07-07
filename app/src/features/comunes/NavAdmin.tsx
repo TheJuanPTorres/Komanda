@@ -2,7 +2,7 @@
 // TODAS las pantallas de admin para poder saltar entre secciones sin volver al
 // piso. Resalta la sección actual. Los auxiliares solo ven "Salir".
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, Lock, LogOut, Package, Users, Wallet } from 'lucide-react';
+import { BarChart3, ClipboardList, Lock, LogOut, Package, Users, Wallet } from 'lucide-react';
 import { useStore } from '../../estado/store.js';
 import { Boton } from '../../design-system/index.js';
 
@@ -19,9 +19,21 @@ export function NavAdmin() {
   const { pathname } = useLocation();
   const sesion = useStore((s) => s.sesion);
   const salir = useStore((s) => s.salir);
+  const pendientes = useStore((s) => s.correcciones.length);
 
   return (
     <nav className="nav-admin">
+      {sesion?.rol === 'admin' && pendientes > 0 && (
+        <Boton
+          variante="secundario"
+          className={`nav-admin__item nav-admin__item--correcciones ${pathname.startsWith('/correcciones') ? 'nav-admin__item--activo' : ''}`}
+          onClick={() => navegar('/correcciones')}
+        >
+          <ClipboardList size={18} strokeWidth={2.25} />
+          <span className="nav-admin__txt">Correcciones</span>
+          <span className="nav-admin__badge">{pendientes}</span>
+        </Boton>
+      )}
       {sesion?.rol === 'admin' &&
         SECCIONES.map(({ ruta, etiqueta, Icono }) => {
           const activo = pathname.startsWith(ruta);

@@ -2,7 +2,7 @@
 // El front NUNCA hace polling: escucha estos eventos y reacciona.
 // Cada cambio de estado de pedidos/productos emite uno de estos eventos.
 
-import type { Pedido, PedidoItem, Producto } from './types.js';
+import type { Pedido, PedidoItem, Producto, SolicitudCorreccion } from './types.js';
 
 // Nombres canónicos de los eventos. Usar SIEMPRE estas constantes,
 // nunca literales sueltos, para evitar typos entre servidor y app.
@@ -11,7 +11,10 @@ export const EVENTOS = {
   PEDIDO_ACTUALIZADO: 'pedido:actualizado',
   PEDIDO_COBRADO: 'pedido:cobrado',
   PEDIDO_CANCELADO: 'pedido:cancelado',
-  PRODUCTO_ACTUALIZADO: 'producto:actualizado'
+  PRODUCTO_ACTUALIZADO: 'producto:actualizado',
+  // Correcciones (v1.5-B): admin y auxiliar ven las solicitudes en vivo.
+  CORRECCION_SOLICITADA: 'correccion:solicitada',
+  CORRECCION_RESUELTA: 'correccion:resuelta'
 } as const;
 
 // ── Payloads de cada evento ──────────────────────────────────────────────
@@ -45,6 +48,16 @@ export interface ProductoActualizadoPayload {
   producto: Producto;
 }
 
+// Un auxiliar solicitó una corrección (reducir/eliminar) en un pedido abierto.
+export interface CorreccionSolicitadaPayload {
+  solicitud: SolicitudCorreccion;
+}
+
+// El admin resolvió una solicitud (aprobada/rechazada/anulada).
+export interface CorreccionResueltaPayload {
+  solicitud: SolicitudCorreccion;
+}
+
 // Mapa evento -> payload. Sirve para tipar el emisor y los listeners.
 export interface EventosPayloads {
   [EVENTOS.PEDIDO_CREADO]: PedidoCreadoPayload;
@@ -52,6 +65,8 @@ export interface EventosPayloads {
   [EVENTOS.PEDIDO_COBRADO]: PedidoCobradoPayload;
   [EVENTOS.PEDIDO_CANCELADO]: PedidoCanceladoPayload;
   [EVENTOS.PRODUCTO_ACTUALIZADO]: ProductoActualizadoPayload;
+  [EVENTOS.CORRECCION_SOLICITADA]: CorreccionSolicitadaPayload;
+  [EVENTOS.CORRECCION_RESUELTA]: CorreccionResueltaPayload;
 }
 
 export type NombreEvento = (typeof EVENTOS)[keyof typeof EVENTOS];

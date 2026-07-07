@@ -9,7 +9,7 @@
 //    devuelve al inventario (misma transacción). Los cambios de stock emiten
 //    producto:actualizado para refrescar el menú en vivo.
 import { db } from '../../db/conexion.js';
-import type { Pedido, PedidoConItems, PedidoItem } from '@pos/shared';
+import type { OrigenCorreccion, Pedido, PedidoConItems, PedidoItem } from '@pos/shared';
 import { errores } from '../../lib/errores.js';
 import { rangoDiaOperativo } from '../../lib/fechas.js';
 import { emisor } from '../../ws/emisor.js';
@@ -230,9 +230,93 @@ export function agregarItem(
   return obtenerPedidoConItems(pedidoId)!;
 }
 
+/** Un item del pedido por id (o undefined). */
+export function itemDe(pedidoId: number, itemId: number): FilaItem | undefined {
+  return db
+    .prepare('SELECT * FROM pedido_items WHERE id = ? AND pedido_id = ?')
+    .get(itemId, pedidoId) as FilaItem | undefined;
+}
+
 /**
- * Cambia la cantidad de una línea (auxiliar o admin; solo pedido abierto).
- * Ajusta el stock por la diferencia. Cantidad 0 no se permite (usar quitar).
+ * EJECUTA la reducción de una línea DENTRO de una transacción ya abierta. No
+ * emite WS: devuelve el producto afectado para emitir tras el commit. `origen`
+ * marca el evento cuando la reducción viene de aprobar una solicitud. Lo usan
+ * tanto el admin directo como la aprobación de correcciones.
+ */
+export function ejecutarReducir(
+  item: FilaItem,
+  cantidadNueva: number,
+  ejecutorId: number,
+  origen?: OrigenCorreccion
+): number | null {
+  const antes = item.cantidad;
+  db.prepare('UPDATE pedido_items SET cantidad = ? WHERE id = ?').run(cantidadNueva, item.id);
+  const ajusto = ajustarStock(item.producto_id, antes - cantidadNueva); // devuelve al inventario
+  registrarEvento({
+    pedidoId: item.pedido_id,
+    usuarioId: ejecutorId,
+    tipo: 'item_reducido',
+    detalle: {
+      producto_id: item.producto_id,
+      nombre: item.nombre_producto,
+      cantidad_antes: antes,
+      cantidad_despues: cantidadNueva,
+      stock_devuelto: ajusto ? antes - cantidadNueva : 0,
+      ...origen
+    }
+  });
+  return ajusto ? item.producto_id : null;
+}
+
+/**
+ * EJECUTA la eliminación de una línea DENTRO de una transacción ya abierta. Si
+ * el pedido queda vacío, autocancela (registrando quién lo dejó vacío). No
+ * emite WS. Devuelve el producto afectado y si el pedido se canceló.
+ */
+export function ejecutarEliminar(
+  item: FilaItem,
+  ejecutorId: number,
+  origen?: OrigenCorreccion
+): { afectado: number | null; cancelado: boolean } {
+  const pedidoId = item.pedido_id;
+  db.prepare('DELETE FROM pedido_items WHERE id = ?').run(item.id);
+  const ajusto = ajustarStock(item.producto_id, item.cantidad);
+  registrarEvento({
+    pedidoId,
+    usuarioId: ejecutorId,
+    tipo: 'item_eliminado',
+    detalle: {
+      producto_id: item.producto_id,
+      nombre: item.nombre_producto,
+      cantidad_eliminada: item.cantidad,
+      monto_eliminado: item.precio_unitario * item.cantidad,
+      stock_devuelto: ajusto ? item.cantidad : 0,
+      ...origen
+    }
+  });
+  const quedan = db
+    .prepare('SELECT COUNT(*) AS n FROM pedido_items WHERE pedido_id = ?')
+    .get(pedidoId) as { n: number };
+  let cancelado = false;
+  if (quedan.n === 0) {
+    db.prepare(
+      "UPDATE pedidos SET estado = 'cancelado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
+    ).run(ejecutorId, pedidoId);
+    registrarEvento({
+      pedidoId,
+      usuarioId: ejecutorId,
+      tipo: 'cancelado',
+      detalle: { motivo: 'quedo_vacio', total_al_cancelar: 0 }
+    });
+    cancelado = true;
+  }
+  return { afectado: ajusto ? item.producto_id : null, cancelado };
+}
+
+/**
+ * Cambia la cantidad de una línea (SOLO admin directo; el auxiliar solicita).
+ * Al bajar, ejecuta la reducción; al subir (poco común), lo registra como
+ * agregado para no falsear la bitácora.
  */
 export function cambiarCantidad(
   pedidoId: number,
@@ -242,60 +326,32 @@ export function cambiarCantidad(
 ): PedidoConItems {
   const operar = db.transaction(() => {
     exigirEditable(pedidoId);
-    const item = db
-      .prepare('SELECT * FROM pedido_items WHERE id = ? AND pedido_id = ?')
-      .get(itemId, pedidoId) as FilaItem | undefined;
+    const item = itemDe(pedidoId, itemId);
     if (!item) throw errores.itemNoEncontrado();
-
-    const antes = item.cantidad;
-    if (cantidad === antes) return null; // sin cambio, sin evento
+    if (cantidad === item.cantidad) return null; // sin cambio, sin evento
+    if (cantidad < item.cantidad) return ejecutarReducir(item, cantidad, usuarioId);
+    // Subir: descuenta stock y registra un item_agregado por la diferencia.
     db.prepare('UPDATE pedido_items SET cantidad = ? WHERE id = ?').run(cantidad, itemId);
-    // delta > 0 al subir (descuenta stock); delta < 0 al bajar (devuelve stock).
-    const delta = cantidad - antes;
-    const ajusto = ajustarStock(item.producto_id, -delta);
-    const afectado = ajusto ? item.producto_id : null;
-
-    if (cantidad < antes) {
-      registrarEvento({
-        pedidoId,
-        usuarioId,
-        tipo: 'item_reducido',
-        detalle: {
-          producto_id: item.producto_id,
-          nombre: item.nombre_producto,
-          cantidad_antes: antes,
-          cantidad_despues: cantidad,
-          stock_devuelto: ajusto ? antes - cantidad : 0
-        }
-      });
-    } else {
-      // Subir por PATCH (la UI no lo hace, pero el endpoint lo permite): se
-      // registra como agregado para no falsear la bitácora.
-      registrarEvento({
-        pedidoId,
-        usuarioId,
-        tipo: 'item_agregado',
-        detalle: {
-          producto_id: item.producto_id,
-          nombre: item.nombre_producto,
-          cantidad: cantidad - antes,
-          precio_unitario: item.precio_unitario
-        }
-      });
-    }
-    return afectado;
+    const ajusto = ajustarStock(item.producto_id, item.cantidad - cantidad);
+    registrarEvento({
+      pedidoId,
+      usuarioId,
+      tipo: 'item_agregado',
+      detalle: {
+        producto_id: item.producto_id,
+        nombre: item.nombre_producto,
+        cantidad: cantidad - item.cantidad,
+        precio_unitario: item.precio_unitario
+      }
+    });
+    return ajusto ? item.producto_id : null;
   });
   const afectado = operar();
   if (afectado !== null) emitirProductos([afectado]);
   return obtenerPedidoConItems(pedidoId)!;
 }
 
-/**
- * Quita una línea del pedido (auxiliar o admin; solo pedido abierto). Devuelve
- * el stock de esa línea al inventario. Si el pedido queda SIN items, se cancela
- * automáticamente registrando quién lo dejó vacío. Devuelve el pedido y si se
- * canceló.
- */
+/** Quita una línea (SOLO admin directo; el auxiliar solicita). */
 export function quitarItem(
   pedidoId: number,
   itemId: number,
@@ -303,46 +359,9 @@ export function quitarItem(
 ): { pedido: PedidoConItems; cancelado: boolean } {
   const operar = db.transaction((): { afectado: number | null; cancelado: boolean } => {
     exigirEditable(pedidoId);
-    const item = db
-      .prepare('SELECT * FROM pedido_items WHERE id = ? AND pedido_id = ?')
-      .get(itemId, pedidoId) as FilaItem | undefined;
+    const item = itemDe(pedidoId, itemId);
     if (!item) throw errores.itemNoEncontrado();
-
-    db.prepare('DELETE FROM pedido_items WHERE id = ?').run(itemId);
-    const ajusto = ajustarStock(item.producto_id, item.cantidad);
-    const afectado = ajusto ? item.producto_id : null;
-
-    registrarEvento({
-      pedidoId,
-      usuarioId,
-      tipo: 'item_eliminado',
-      detalle: {
-        producto_id: item.producto_id,
-        nombre: item.nombre_producto,
-        cantidad_eliminada: item.cantidad,
-        monto_eliminado: item.precio_unitario * item.cantidad,
-        stock_devuelto: ajusto ? item.cantidad : 0
-      }
-    });
-
-    // ¿Quedó vacío? Entonces se cancela automáticamente (mismo transacción).
-    const quedan = db
-      .prepare('SELECT COUNT(*) AS n FROM pedido_items WHERE pedido_id = ?')
-      .get(pedidoId) as { n: number };
-    let cancelado = false;
-    if (quedan.n === 0) {
-      db.prepare(
-        "UPDATE pedidos SET estado = 'cancelado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
-      ).run(usuarioId, pedidoId);
-      registrarEvento({
-        pedidoId,
-        usuarioId,
-        tipo: 'cancelado',
-        detalle: { motivo: 'quedo_vacio', total_al_cancelar: 0 }
-      });
-      cancelado = true;
-    }
-    return { afectado, cancelado };
+    return ejecutarEliminar(item, usuarioId);
   });
   const { afectado, cancelado } = operar();
   if (afectado !== null) emitirProductos([afectado]);
@@ -380,6 +399,10 @@ export function cancelarPedido(pedidoId: number, adminId: number): void {
     }
     db.prepare(
       "UPDATE pedidos SET estado = 'cancelado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
+    ).run(adminId, pedidoId);
+    // Anula las solicitudes de corrección pendientes del pedido (misma tx).
+    db.prepare(
+      "UPDATE solicitudes_correccion SET estado = 'anulada', resuelto_por = ?, resuelto_en = datetime('now') WHERE pedido_id = ? AND estado = 'pendiente'"
     ).run(adminId, pedidoId);
     registrarEvento({
       pedidoId,

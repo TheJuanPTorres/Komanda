@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from './estado/store.js';
 import { iniciarTiempoReal } from './estado/tiempoReal.js';
 import { Rutas } from './rutas.js';
+import { Toast } from './design-system/index.js';
 import { Cargando } from './features/comunes/Cargando.js';
 import { Preloader } from './features/preloader/Preloader.js';
 import { IndicadorConexion } from './features/comunes/IndicadorConexion.js';
@@ -20,12 +21,19 @@ export function App() {
   const cargandoSesion = useStore((s) => s.cargandoSesion);
   const sesion = useStore((s) => s.sesion);
   const debeCambiarPin = useStore((s) => s.debeCambiarPin);
+  const cargarCorrecciones = useStore((s) => s.cargarCorrecciones);
+  const aviso = useStore((s) => s.aviso);
   const [splash, setSplash] = useState(() => !sessionStorage.getItem(CLAVE_SPLASH));
 
   useEffect(() => {
     iniciarTiempoReal();
     cargarSesion();
   }, [cargarSesion]);
+
+  // El admin mantiene la lista de correcciones pendientes (badge + sección).
+  useEffect(() => {
+    if (sesion?.rol === 'admin') cargarCorrecciones().catch(() => {});
+  }, [sesion?.rol, cargarCorrecciones]);
 
   const forzarCambioPin = Boolean(sesion) && debeCambiarPin;
 
@@ -40,6 +48,8 @@ export function App() {
           <ActualizacionPWA />
           {/* El aviso de conexión solo aplica con sesión activa (hay socket). */}
           {sesion && <IndicadorConexion />}
+          {/* Aviso breve global (correcciones resueltas, etc.). */}
+          {aviso && <Toast tono="exito">{aviso}</Toast>}
           {/* Bloquea la operación hasta renovar un PIN admin corto heredado. */}
           {forzarCambioPin && <CambiarPinObligatorio />}
         </>

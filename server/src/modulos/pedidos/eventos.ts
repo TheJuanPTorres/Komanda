@@ -41,14 +41,19 @@ const esquemasDetalle = {
     nombre: z.string(),
     cantidad_antes: z.number().int().positive(),
     cantidad_despues: z.number().int().positive(),
-    stock_devuelto: z.number().int()
+    stock_devuelto: z.number().int(),
+    // Presentes solo si la reducción vino de aprobar una solicitud.
+    solicitud_id: z.number().int().positive().optional(),
+    solicitado_por: z.number().int().positive().optional()
   }),
   item_eliminado: z.object({
     producto_id: z.number().int().positive(),
     nombre: z.string(),
     cantidad_eliminada: z.number().int().positive(),
     monto_eliminado: z.number().int().min(0),
-    stock_devuelto: z.number().int()
+    stock_devuelto: z.number().int(),
+    solicitud_id: z.number().int().positive().optional(),
+    solicitado_por: z.number().int().positive().optional()
   }),
   nota_editada: z.object({
     nota_antes: z.string(),
@@ -61,6 +66,22 @@ const esquemasDetalle = {
   cobrado: z.object({
     total: z.number().int().min(0),
     pagos: z.array(z.object({ metodo: z.enum(['efectivo', 'qr_breb']), monto: z.number().int().positive() }))
+  }),
+  correccion_solicitada: z.object({
+    solicitud_id: z.number().int().positive(),
+    tipo: z.enum(['reducir', 'eliminar']),
+    producto_id: z.number().int().positive(),
+    nombre: z.string(),
+    cantidad_actual: z.number().int().positive(),
+    cantidad_nueva: z.number().int().positive().optional(),
+    motivo: z.string()
+  }),
+  correccion_rechazada: z.object({
+    solicitud_id: z.number().int().positive(),
+    tipo: z.enum(['reducir', 'eliminar']),
+    producto_id: z.number().int().positive(),
+    nombre: z.string(),
+    motivo: z.string()
   })
 } as const satisfies Record<TipoEventoPedido, z.ZodType>;
 

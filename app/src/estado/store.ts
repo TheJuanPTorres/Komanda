@@ -9,7 +9,9 @@ import type {
   PedidoConItems,
   PedidoItem,
   Producto,
-  Sesion
+  Sesion,
+  SolicitarCorreccionReq,
+  SolicitudCorreccion
 } from '@pos/shared';
 import { api } from '../lib/api.js';
 import { conectarSocket, desconectarSocket } from '../lib/socket.js';
@@ -25,6 +27,10 @@ interface EstadoApp {
   debeCambiarPin: boolean;
   menu: MenuAgrupado;
   pedidos: PedidoConItems[];
+  // Solicitudes de corrección PENDIENTES conocidas por esta sesión.
+  correcciones: SolicitudCorreccion[];
+  // Aviso breve global (toast), p. ej. "Tu corrección fue aprobada".
+  aviso: string | null;
 
   // Sesión
   cargarSesion: () => Promise<void>;
@@ -49,10 +55,21 @@ interface EstadoApp {
   cancelarPedido: (pedidoId: number) => Promise<void>;
   cobrar: (pedidoId: number, pagos: PagoReq[]) => Promise<void>;
 
+  // Correcciones (v1.5-B)
+  cargarCorrecciones: () => Promise<void>; // admin: todas las pendientes
+  cargarCorreccionesPedido: (pedidoId: number) => Promise<void>; // por pedido
+  solicitarCorreccion: (pedidoId: number, itemId: number, req: SolicitarCorreccionReq) => Promise<void>;
+  aprobarCorreccion: (id: number) => Promise<void>;
+  rechazarCorreccion: (id: number) => Promise<void>;
+  mostrarAviso: (texto: string) => void;
+
   // Aplicados por tiempo real o por respuestas de la API (idempotentes).
   aplicarPedido: (p: PedidoConItems) => void;
   quitarPedidoLocal: (pedidoId: number) => void;
   aplicarProducto: (producto: Producto) => void;
+  aplicarCorreccion: (s: SolicitudCorreccion) => void; // agregar/reemplazar pendiente
+  resolverCorreccionLocal: (id: number) => void; // quitar de pendientes
+  quitarCorreccionesDePedido: (pedidoId: number) => void; // al cancelar
 }
 
 type RespPedido = { pedido: PedidoConItems };
@@ -63,6 +80,8 @@ export const useStore = create<EstadoApp>((set, get) => ({
   debeCambiarPin: false,
   menu: [],
   pedidos: [],
+  correcciones: [],
+  aviso: null,
 
   cargarSesion: async () => {
     try {
@@ -99,7 +118,7 @@ export const useStore = create<EstadoApp>((set, get) => ({
   salir: async () => {
     await api.post('/api/auth/salir');
     desconectarSocket();
-    set({ sesion: null, debeCambiarPin: false, pedidos: [], menu: [] });
+    set({ sesion: null, debeCambiarPin: false, pedidos: [], menu: [], correcciones: [], aviso: null });
   },
 
   cargarMenu: async () => {
@@ -160,6 +179,63 @@ export const useStore = create<EstadoApp>((set, get) => ({
     await api.post('/api/cobros', { pedidoId, pagos });
     // El pedido queda cobrado y sale del piso (el evento WS también lo quita).
     get().quitarPedidoLocal(pedidoId);
+  },
+
+  // ── Correcciones ─────────────────────────────────────────────────────────
+  cargarCorrecciones: async () => {
+    const { solicitudes } = await api.get<{ solicitudes: SolicitudCorreccion[] }>('/api/correcciones');
+    set({ correcciones: solicitudes });
+  },
+
+  cargarCorreccionesPedido: async (pedidoId) => {
+    const { solicitudes } = await api.get<{ solicitudes: SolicitudCorreccion[] }>(
+      `/api/pedidos/${pedidoId}/correcciones`
+    );
+    // Reemplaza las de este pedido por las recién traídas (deja el resto).
+    const otras = get().correcciones.filter((c) => c.pedido_id !== pedidoId);
+    set({ correcciones: [...otras, ...solicitudes] });
+  },
+
+  solicitarCorreccion: async (pedidoId, itemId, req) => {
+    const { solicitud } = await api.post<{ solicitud: SolicitudCorreccion }>(
+      `/api/pedidos/${pedidoId}/items/${itemId}/correccion`,
+      req
+    );
+    get().aplicarCorreccion(solicitud);
+  },
+
+  aprobarCorreccion: async (id) => {
+    await api.post(`/api/correcciones/${id}/aprobar`);
+    get().resolverCorreccionLocal(id);
+  },
+
+  rechazarCorreccion: async (id) => {
+    await api.post(`/api/correcciones/${id}/rechazar`);
+    get().resolverCorreccionLocal(id);
+  },
+
+  mostrarAviso: (texto) => {
+    set({ aviso: texto });
+    window.setTimeout(() => {
+      if (get().aviso === texto) set({ aviso: null });
+    }, 3000);
+  },
+
+  aplicarCorreccion: (s) => {
+    if (s.estado !== 'pendiente') {
+      get().resolverCorreccionLocal(s.id);
+      return;
+    }
+    const otras = get().correcciones.filter((c) => c.id !== s.id);
+    set({ correcciones: [...otras, s].sort((a, b) => a.creado_en.localeCompare(b.creado_en)) });
+  },
+
+  resolverCorreccionLocal: (id) => {
+    set({ correcciones: get().correcciones.filter((c) => c.id !== id) });
+  },
+
+  quitarCorreccionesDePedido: (pedidoId) => {
+    set({ correcciones: get().correcciones.filter((c) => c.pedido_id !== pedidoId) });
   },
 
   aplicarPedido: (p) => {

@@ -158,3 +158,18 @@
   letter-spacing: 0.02em;
   color: var(--tinta-fuerte);
 }
+
+/* Aviso de correcciones pendientes en el pie del pedido (bloquea el cobro). */
+.pedido__aviso-corr {
+  width: 100%;
+  border: 2px solid var(--coma);
+  background: var(--coma-tenue);
+  color: var(--tinta-fuerte);
+  border-radius: var(--radio-m);
+  padding: var(--esp-2) var(--esp-3);
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+}
