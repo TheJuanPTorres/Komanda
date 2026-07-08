@@ -4,7 +4,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Banknote, Download, QrCode } from 'lucide-react';
-import type { AgregadosVentas, FiltroVentas, MetodoPago, RespVentas, VentaResumen } from '@pos/shared';
+import type {
+  AgregadosVentas,
+  FiltroVentas,
+  MetodoPago,
+  RespVentas,
+  Usuario,
+  VentaResumen
+} from '@pos/shared';
 import { api } from '../../lib/api.js';
 import { formatearDinero } from '../../design-system/index.js';
 import { turnoBarra } from '../../lib/etiquetas.js';
@@ -53,7 +60,17 @@ export function Ventas() {
   const [estado, setEstado] = useState<FiltroVentas['estado']>(undefined);
   const [metodo, setMetodo] = useState<MetodoPago | undefined>(undefined);
   const [tipo, setTipo] = useState<FiltroVentas['tipo']>(undefined);
+  const [auxiliarId, setAuxiliarId] = useState<number | undefined>(undefined);
   const [conCorr, setConCorr] = useState(false);
+  const [auxiliares, setAuxiliares] = useState<Usuario[]>([]);
+
+  // Lista de auxiliares activos para los chips (patrón compartido con acceso).
+  useEffect(() => {
+    api
+      .get<{ auxiliares: Usuario[] }>('/api/usuarios/auxiliares')
+      .then((r) => setAuxiliares(r.auxiliares))
+      .catch(() => {});
+  }, []);
 
   const [ventas, setVentas] = useState<VentaResumen[]>([]);
   const [agregados, setAgregados] = useState<AgregadosVentas>({ numero: 0, total: 0, ticket_promedio: 0 });
@@ -68,9 +85,10 @@ export function Ventas() {
       estado,
       metodo,
       tipo,
+      auxiliar_id: auxiliarId,
       con_correcciones: conCorr || undefined
     };
-  }, [atajo, estado, metodo, tipo, conCorr]);
+  }, [atajo, estado, metodo, tipo, auxiliarId, conCorr]);
 
   const claveFiltro = JSON.stringify(filtroBase);
 
@@ -161,6 +179,16 @@ export function Ventas() {
             <span className="vf__sep" />
             <Chip activo={conCorr} onClick={() => setConCorr((v) => !v)}>Con correcciones</Chip>
           </div>
+          {auxiliares.length > 0 && (
+            <div className="vf__fila">
+              <Chip activo={!auxiliarId} onClick={() => setAuxiliarId(undefined)}>Todos</Chip>
+              {auxiliares.map((a) => (
+                <Chip key={a.id} activo={auxiliarId === a.id} onClick={() => setAuxiliarId(a.id)}>
+                  {a.nombre}
+                </Chip>
+              ))}
+            </div>
+          )}
           <div className="vf__fila">
             <Boton variante="secundario" onClick={descargarCsv} disabled={ventas.length === 0}>
               <Download size={16} strokeWidth={2.25} />

@@ -40,7 +40,13 @@ GET /api/ventas/:id (ficha: items con snapshots, pagos, línea de tiempo complet
 de la bitácora). GET /api/ventas.csv (export del filtro, BOM UTF-8 + CRLF,
 rate-limit propio). GET /api/pulso (franja en vivo del admin: ventas y # de hoy,
 abiertos, correcciones pendientes). GET /api/cierre-caja/resumen (texto plano
-para compartir por wa.me). Fronteras de día SIEMPRE vía lib/fechas.ts.
+para compartir por wa.me; el número lo configura el admin en `configuracion`).
+Fronteras de día SIEMPRE vía lib/fechas.ts.
+- PENDIENTE (escala): si las ventas superan ~10.000 registros, el export CSV
+  (GET /api/ventas.csv) deberá EXIGIR rango de fechas y aplicar un tope; hoy
+  exporta todo el filtro sin límite (negocio chico).
+- Ajustes del admin en el módulo `config` (tabla `configuracion` clave/valor):
+  GET/PUT /api/config; hoy solo `whatsapp_cierre` (número normalizado a dígitos).
 
 ## Stack (no cambiar sin justificación explícita)
 - Node.js 20+, TypeScript estricto, Fastify

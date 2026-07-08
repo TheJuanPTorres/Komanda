@@ -1,0 +1,7 @@
+.cfg__ayuda {
+  font-family: var(--fuente-ui);
+  font-size: 13px;
+  color: var(--tinta-media);
+  margin: calc(-1 * var(--esp-3)) 0 0;
+  line-height: 1.4;
+}

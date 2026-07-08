@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { CierrePreview } from '@pos/shared';
 import { requiereRol } from '../auth/middleware.js';
+import { whatsappCierre } from '../config/servicio.js';
 import { previsualizarCierre, registrarCierre, resumenTexto } from './servicio.js';
 
 const cierreSchema = z.object({
@@ -17,9 +18,10 @@ export async function rutasCierreCaja(app: FastifyInstance): Promise<void> {
     return { preview: previsualizarCierre() satisfies CierrePreview };
   });
 
-  // GET /api/cierre-caja/resumen — texto plano del día para compartir (WhatsApp).
+  // GET /api/cierre-caja/resumen — texto plano del día + número de WhatsApp
+  // configurado (o null) para armar el enlace wa.me.
   app.get('/api/cierre-caja/resumen', { preHandler: requiereRol('admin') }, async () => {
-    return { texto: resumenTexto() };
+    return { texto: resumenTexto(), whatsapp: whatsappCierre() };
   });
 
   // POST /api/cierre-caja — registra el cierre de hoy (uno por día).

@@ -78,11 +78,16 @@ export function Cierre() {
       .catch(() => setError('No se pudo cargar el cierre.'));
   }, []);
 
-  // Comparte el resumen del día por WhatsApp (el texto lo arma el servidor).
+  // Comparte el resumen del día por WhatsApp. El texto y el número (si el admin
+  // lo configuró) los da el servidor. Con número: abre el chat directo; sin
+  // número: WhatsApp deja elegir el contacto.
   async function compartirResumen() {
     try {
-      const { texto } = await api.get<{ texto: string }>('/api/cierre-caja/resumen');
-      window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener');
+      const { texto, whatsapp } = await api.get<{ texto: string; whatsapp: string | null }>(
+        '/api/cierre-caja/resumen'
+      );
+      const base = whatsapp ? `https://wa.me/${whatsapp}` : 'https://wa.me/';
+      window.open(`${base}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener');
     } catch {
       setError('No se pudo preparar el resumen.');
     }

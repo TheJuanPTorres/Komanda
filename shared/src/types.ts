@@ -331,6 +331,12 @@ export interface AgregadosVentas {
   ticket_promedio: number;
 }
 
+// Configuración del negocio (ajustes del admin). Por ahora, el número de
+// WhatsApp (solo dígitos, con indicativo) para compartir el resumen de cierre.
+export interface ConfigNegocio {
+  whatsapp_cierre: string | null;
+}
+
 // Pulso del día (franja en vivo del panel admin).
 export interface PulsoDia {
   ventas_hoy: number; // dinero cobrado hoy (día operativo)
