@@ -17,6 +17,7 @@ import {
   abrirMesa,
   agregarItem,
   cambiarCantidad,
+  cambiarCliente,
   cambiarNota,
   cancelarPedido,
   crearBarra,
@@ -35,8 +36,12 @@ const itemParams = z.object({
 
 const crearPedidoSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('mesa'), mesaNumero: z.number().int().min(1).max(4) }),
-  z.object({ tipo: z.literal('barra'), clienteNombre: z.string().trim().min(1).max(60) })
+  // Barra instantánea: el nombre es opcional (el turno identifica el pedido).
+  z.object({ tipo: z.literal('barra'), clienteNombre: z.string().trim().max(60).optional() })
 ]);
+
+// Nombre del cliente de barra: opcional, puede quedar vacío (se limpia).
+const cambiarClienteSchema = z.object({ cliente_nombre: z.string().trim().max(60) });
 
 const agregarItemSchema = z.object({
   productoId: z.number().int().positive(),
@@ -66,15 +71,12 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
   });
 
   // GET /api/pedidos/:id/eventos — bitácora del pedido en orden cronológico.
-  // Permisos: el admin ve todo; el auxiliar solo pedidos ABIERTOS (la historia
-  // de ventas cerradas es del explorador del admin, Etapa B).
-  app.get('/api/pedidos/:id/eventos', { preHandler: requiereSesion }, async (req) => {
+  // SOLO admin: el historial es una herramienta de validación del admin (en el
+  // pedido abierto y en la ficha de /ventas). Los auxiliares ya no lo consumen.
+  app.get('/api/pedidos/:id/eventos', { preHandler: requiereRol('admin') }, async (req) => {
     const { id } = idParam.parse(req.params);
     const pedido = obtenerPedidoConItems(id);
     if (!pedido) throw errores.pedidoNoEncontrado();
-    if (req.user.rol !== 'admin' && pedido.pedido.estado !== 'abierto') {
-      throw errores.sinPermiso();
-    }
     return { eventos: listarEventos(id) satisfies EventoPedido[] };
   });
 
@@ -88,7 +90,7 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
       return reply.status(creado ? 201 : 200).send({ pedido });
     }
 
-    const pedido = crearBarra(datos.clienteNombre, req.user.id);
+    const pedido = crearBarra(datos.clienteNombre ?? null, req.user.id);
     emisor.pedidoCreado({ pedido: pedido.pedido, items: pedido.items });
     return reply.status(201).send({ pedido });
   });
@@ -127,6 +129,16 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
     const { id } = idParam.parse(req.params);
     const { nota } = cambiarNotaSchema.parse(req.body);
     const pedido = cambiarNota(id, nota, req.user.id);
+    emitirActualizado(pedido);
+    return { pedido };
+  });
+
+  // PATCH /api/pedidos/:id/cliente — nombrar (o renombrar) un pedido de barra.
+  // Auxiliar y admin; el nombre es opcional (puede quedar vacío).
+  app.patch('/api/pedidos/:id/cliente', { preHandler: requiereSesion }, async (req) => {
+    const { id } = idParam.parse(req.params);
+    const { cliente_nombre } = cambiarClienteSchema.parse(req.body);
+    const pedido = cambiarCliente(id, cliente_nombre, req.user.id);
     emitirActualizado(pedido);
     return { pedido };
   });

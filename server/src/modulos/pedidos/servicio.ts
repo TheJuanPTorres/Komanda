@@ -156,21 +156,32 @@ function siguienteTurnoBarra(): number {
   return (fila.maximo ?? 0) + 1;
 }
 
-/** Crea un pedido de barra con turno secuencial del día asignado por el servidor. */
-export function crearBarra(clienteNombre: string, auxiliarId: number): PedidoConItems {
+/**
+ * Crea un pedido de barra con turno secuencial del día asignado por el servidor.
+ * El nombre del cliente es OPCIONAL (barra instantánea): el pedido se identifica
+ * por su turno. Se puede nombrar después con cambiarCliente().
+ */
+export function crearBarra(clienteNombre: string | null, auxiliarId: number): PedidoConItems {
+  const nombre = clienteNombre && clienteNombre.trim() ? clienteNombre.trim() : null;
   const crear = db.transaction(() => {
     const turno = siguienteTurnoBarra();
     const info = db
       .prepare(
         "INSERT INTO pedidos (tipo, turno, cliente_nombre, auxiliar_id) VALUES ('barra', ?, ?, ?)"
       )
-      .run(turno, clienteNombre, auxiliarId);
+      .run(turno, nombre, auxiliarId);
     const id = Number(info.lastInsertRowid);
     registrarEvento({
       pedidoId: id,
       usuarioId: auxiliarId,
       tipo: 'creado',
-      detalle: { tipo_pedido: 'barra', cliente_nombre: clienteNombre, turno, items_iniciales: [] }
+      detalle: {
+        tipo_pedido: 'barra',
+        // El nombre solo se guarda en el evento si el auxiliar lo escribió.
+        ...(nombre ? { cliente_nombre: nombre } : {}),
+        turno,
+        items_iniciales: []
+      }
     });
     return id;
   });
@@ -379,7 +390,31 @@ export function cambiarNota(pedidoId: number, nota: string, usuarioId: number): 
       pedidoId,
       usuarioId,
       tipo: 'nota_editada',
-      detalle: { nota_antes: notaAntes, nota_despues: nota }
+      detalle: { campo: 'nota', antes: notaAntes, despues: nota }
+    });
+  });
+  operar();
+  return obtenerPedidoConItems(pedidoId)!;
+}
+
+/**
+ * Edita el nombre del cliente de un pedido de barra (barra instantánea). Puede
+ * dejarse vacío (vuelve a null). Registra un evento nota_editada con
+ * campo='cliente_nombre'. Auxiliar y admin, solo sobre pedidos abiertos.
+ */
+export function cambiarCliente(pedidoId: number, clienteNombre: string, usuarioId: number): PedidoConItems {
+  const nombre = clienteNombre.trim();
+  const operar = db.transaction(() => {
+    const pedido = exigirAbierto(pedidoId);
+    if (pedido.tipo !== 'barra') throw errores.pedidoNoEditable();
+    const antes = pedido.cliente_nombre ?? '';
+    if (nombre === antes) return; // sin cambio, sin evento
+    db.prepare('UPDATE pedidos SET cliente_nombre = ? WHERE id = ?').run(nombre || null, pedidoId);
+    registrarEvento({
+      pedidoId,
+      usuarioId,
+      tipo: 'nota_editada',
+      detalle: { campo: 'cliente_nombre', antes, despues: nombre }
     });
   });
   operar();

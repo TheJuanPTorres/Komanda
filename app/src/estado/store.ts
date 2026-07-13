@@ -51,11 +51,19 @@ interface EstadoApp {
   // Aplican la respuesta al estado de una vez; el evento WS que llega
   // después es idempotente (mismo pedido, mismo id).
   abrirMesa: (mesaNumero: number) => Promise<PedidoConItems>;
-  crearBarra: (clienteNombre: string) => Promise<PedidoConItems>;
+  // Barra instantánea: el nombre es opcional (el turno identifica el pedido).
+  crearBarra: (clienteNombre?: string | null) => Promise<PedidoConItems>;
   agregarItem: (pedidoId: number, productoId: number, cantidad?: number) => Promise<void>;
+  // Suma 1 con feedback OPTIMISTA: la cantidad sube al instante y se reconcilia
+  // con el servidor; si el servidor rechaza, revierte y avisa (Parte 5.4).
+  sumarItem: (
+    pedidoId: number,
+    producto: { id: number; nombre: string; precio: number; costo?: number }
+  ) => Promise<void>;
   cambiarCantidad: (pedidoId: number, itemId: number, cantidad: number) => Promise<void>;
   quitarItem: (pedidoId: number, itemId: number) => Promise<PedidoConItems>;
   cambiarNota: (pedidoId: number, nota: string) => Promise<void>;
+  cambiarCliente: (pedidoId: number, clienteNombre: string) => Promise<void>;
   cancelarPedido: (pedidoId: number) => Promise<void>;
   cobrar: (pedidoId: number, pagos: PagoReq[]) => Promise<void>;
 
@@ -144,7 +152,11 @@ export const useStore = create<EstadoApp>((set, get) => ({
   },
 
   crearBarra: async (clienteNombre) => {
-    const { pedido } = await api.post<RespPedido>('/api/pedidos', { tipo: 'barra', clienteNombre });
+    const nombre = clienteNombre && clienteNombre.trim() ? clienteNombre.trim() : undefined;
+    const { pedido } = await api.post<RespPedido>('/api/pedidos', {
+      tipo: 'barra',
+      clienteNombre: nombre
+    });
     get().aplicarPedido(pedido);
     return pedido;
   },
@@ -155,6 +167,48 @@ export const useStore = create<EstadoApp>((set, get) => ({
       cantidad
     });
     get().aplicarPedido(pedido);
+  },
+
+  sumarItem: async (pedidoId, producto) => {
+    const previo = get().pedidos.find((p) => p.pedido.id === pedidoId);
+    if (!previo) {
+      // Sin copia local todavía: cae al camino normal (sin optimismo).
+      await get().agregarItem(pedidoId, producto.id);
+      return;
+    }
+    // 1) Optimista: sube 1 al instante (item existente o línea temporal).
+    const existente = previo.items.find((it) => it.producto_id === producto.id);
+    const items: PedidoItem[] = existente
+      ? previo.items.map((it) =>
+          it.producto_id === producto.id ? { ...it, cantidad: it.cantidad + 1 } : it
+        )
+      : [
+          ...previo.items,
+          {
+            id: -producto.id, // id temporal negativo; el servidor manda el real
+            pedido_id: pedidoId,
+            producto_id: producto.id,
+            nombre_producto: producto.nombre,
+            precio_unitario: producto.precio,
+            costo_unitario: producto.costo ?? 0,
+            cantidad: 1,
+            agregado_por: get().sesion?.id ?? 0,
+            agregado_en: new Date().toISOString()
+          }
+        ];
+    get().aplicarPedido({ pedido: previo.pedido, items, total: calcularTotal(items) });
+
+    // 2) Reconciliar con el servidor; si rechaza, revertir + avisar.
+    try {
+      const { pedido } = await api.post<RespPedido>(`/api/pedidos/${pedidoId}/items`, {
+        productoId: producto.id,
+        cantidad: 1
+      });
+      get().aplicarPedido(pedido);
+    } catch {
+      get().aplicarPedido(previo); // revierte al estado anterior
+      get().mostrarAviso(`No se pudo agregar ${producto.nombre}. Intenta de nuevo.`);
+    }
   },
 
   cambiarCantidad: async (pedidoId, itemId, cantidad) => {
@@ -173,6 +227,13 @@ export const useStore = create<EstadoApp>((set, get) => ({
 
   cambiarNota: async (pedidoId, nota) => {
     const { pedido } = await api.patch<RespPedido>(`/api/pedidos/${pedidoId}/nota`, { nota });
+    get().aplicarPedido(pedido);
+  },
+
+  cambiarCliente: async (pedidoId, clienteNombre) => {
+    const { pedido } = await api.patch<RespPedido>(`/api/pedidos/${pedidoId}/cliente`, {
+      cliente_nombre: clienteNombre
+    });
     get().aplicarPedido(pedido);
   },
 

@@ -117,6 +117,193 @@
   place-items: center;
 }
 
+/* ── FilaMenu (toma en móvil: UNA fila por producto) ───────────────────── */
+.fila-menu {
+  display: flex;
+  align-items: stretch;
+  gap: var(--esp-2);
+  min-height: 64px;
+  background: var(--superficie-1);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-m);
+  padding: var(--esp-1);
+}
+.fila-menu--activa {
+  border: 2px solid var(--linea-fuerte);
+}
+/* Cuerpo tocable: foto + datos. Tocarlo suma 1. */
+.fila-menu__cuerpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: var(--esp-1);
+  border-radius: var(--radio-s);
+  touch-action: manipulation; /* sin retraso ni zoom por doble-tap */
+}
+.fila-menu__cuerpo:active {
+  background: rgba(21, 17, 10, 0.05);
+}
+.fila-menu__cuerpo:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.fila-menu__foto {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radio-m);
+  overflow: hidden;
+  background: var(--coma-tenue);
+  display: grid;
+  place-items: center;
+}
+.fila-menu__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.fila-menu__inicial {
+  font-family: var(--fuente-display);
+  font-size: 24px;
+  color: var(--pare);
+  line-height: 1;
+}
+.fila-menu__datos {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fila-menu__nombre {
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.15;
+  color: var(--tinta-fuerte);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fila-menu__linea {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+.fila-menu__precio {
+  font-family: var(--fuente-datos);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  color: var(--tinta-fuerte);
+}
+.fila-menu__badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: var(--radio-pill);
+}
+.fila-menu__badge--stock {
+  background: var(--coma);
+  color: var(--tinta-fuerte);
+}
+.fila-menu__badge--agotado {
+  background: var(--superficie-2);
+  border: 1.5px solid var(--pare);
+  color: var(--pare);
+}
+/* Control de cantidad a la derecha. */
+.fila-menu__ctrl {
+  flex: none;
+  display: flex;
+  align-items: center;
+  user-select: none; /* nada de selección de texto en los controles */
+}
+.fila-menu__mas {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--pare);
+  color: var(--tinta-sobre-nocturno);
+  border: none;
+  border-radius: var(--radio-m);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.fila-menu__mas:active {
+  background: var(--pare-presionado);
+  transform: scale(0.96);
+}
+.fila-menu__mas:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.fila-menu__stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+.fila-menu__paso {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: var(--superficie-2);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-m);
+  color: var(--tinta-fuerte);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.fila-menu__paso:active {
+  transform: scale(0.94);
+  border-color: var(--linea-fuerte);
+}
+.fila-menu__paso--mas {
+  background: var(--pare);
+  color: var(--tinta-sobre-nocturno);
+  border-color: var(--pare);
+}
+.fila-menu__paso--mas:active {
+  background: var(--pare-presionado);
+}
+.fila-menu__paso:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.fila-menu__cant {
+  min-width: 28px;
+  text-align: center;
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--tinta-fuerte);
+  animation: fila-menu-pop var(--dur-media) var(--curva);
+}
+@keyframes fila-menu-pop {
+  0% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* ── TarjetaMesa (la placa vial) ───────────────────────────────────────── */
 .pat-mesa {
   width: 100%;
@@ -201,6 +388,22 @@
   font-size: clamp(2rem, 8vw, 3.5rem);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+/* Compacto: una sola línea (etiqueta + monto), para la franja sticky de la
+   toma. Debe leerse de un vistazo a un metro sin comerse la pantalla. */
+.pat-total--compacto {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--radio-m);
+}
+.pat-total--compacto .pat-total__etiqueta {
+  font-size: 12px;
+}
+.pat-total--compacto .pat-total__monto {
+  font-size: clamp(1.6rem, 7vw, 2.2rem);
 }
 
 /* ── LineaPedido ───────────────────────────────────────────────────────── */

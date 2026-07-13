@@ -1,79 +1,127 @@
-.pedido {
-  min-height: 100dvh;
+/* ── Toma de pedidos (rediseño móvil v1.5-C) ───────────────────────────── */
+.toma {
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-}
-.pedido__total-enc {
-  font-family: var(--fuente-datos);
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  font-size: 18px;
-  color: var(--tinta-fuerte);
-}
-.pedido__cols {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr;
   min-height: 0;
 }
-@media (min-width: 880px) {
-  .pedido__cols {
-    grid-template-columns: 1fr 380px;
-  }
-}
-.pedido__menu {
-  padding: var(--esp-4);
-  overflow-y: auto;
+/* Franja fija bajo el encabezado: nombre (barra) + total compacto + chips.
+   Es un ítem flex (no scrollea): siempre visible sobre el cuerpo scrolleable.
+   En 360px, encabezado + esta franja no pasan de ~30% de la pantalla. */
+.toma__sticky {
+  flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--esp-5);
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--superficie-1);
+  border-bottom: 1px solid var(--linea);
 }
-.pedido__cat-grid {
+.toma__nombre {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--esp-3);
+  background: var(--superficie-2);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-m);
+  color: var(--tinta-fuerte);
+  font-family: var(--fuente-ui);
+  font-size: 16px; /* ≥16px: evita el auto-zoom de iOS */
+  outline: none;
+}
+.toma__nombre::placeholder {
+  color: var(--tinta-media);
+  opacity: 1;
+}
+.toma__nombre:focus {
+  border: 2px solid var(--tinta-fuerte);
+}
+/* Chips de categoría: scroll horizontal si no caben, sin romper el layout. */
+.toma__chips {
+  display: flex;
+  gap: var(--esp-2);
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.toma__chips::-webkit-scrollbar {
+  display: none;
+}
+.toma__chips .ds-chip {
+  flex: none;
+}
+/* Cuerpo scrolleable con las secciones de productos. */
+.toma__cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--esp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+.toma__seccion {
+  scroll-margin-top: var(--esp-2);
+}
+.toma__filas {
   display: grid;
-  /* Móvil: exactamente 2 columnas */
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr; /* móvil: UNA columna estricta */
   gap: var(--esp-2);
 }
-@media (min-width: 640px) {
-  .pedido__cat-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+/* Tablet/desktop: rejilla más densa (dos columnas de filas). */
+@media (min-width: 768px) {
+  .toma__cuerpo {
+    padding: var(--esp-4);
+  }
+  .toma__filas {
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--esp-3);
   }
 }
-.pedido__cuenta {
-  border-top: 2px solid var(--linea-fuerte);
-  background: var(--superficie-1);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-@media (min-width: 880px) {
-  .pedido__cuenta {
-    border-top: none;
-    border-left: 2px solid var(--linea-fuerte);
-  }
-}
-.pedido__lista {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--esp-2) var(--esp-4);
-}
-.pedido__lista .pat-linea + .pat-linea {
-  border-top: 1px solid var(--linea);
-}
-.pedido__pie {
-  /* Siempre visible: se ancla al fondo de la cuenta para no tener que
-     scrollear hasta abajo para cobrar. */
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  padding: var(--esp-4);
-  border-top: 2px solid var(--linea-fuerte);
-  background: var(--superficie-1);
-  box-shadow: 0 -6px 16px -12px rgba(21, 17, 10, 0.5);
+.toma__pie-admin {
   display: flex;
   flex-direction: column;
   gap: var(--esp-3);
+  padding-top: var(--esp-2);
+  border-top: 1px solid var(--linea);
+}
+/* Aviso de correcciones pendientes: sobre la barra de acción (no se esconde). */
+.toma__aviso-corr {
+  flex: none;
+  width: 100%;
+  border: none;
+  border-top: 2px solid var(--coma);
+  background: var(--coma-tenue);
+  color: var(--tinta-fuerte);
+  padding: var(--esp-2) var(--esp-3);
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+}
+/* Barra de acción inferior fija (zona del pulgar): último ítem del flex. */
+.toma__accion {
+  flex: none;
+  padding: var(--esp-2) var(--esp-3) max(var(--esp-2), env(safe-area-inset-bottom));
+  background: var(--superficie-1);
+  border-top: 2px solid var(--linea-fuerte);
+  box-shadow: 0 -6px 16px -12px rgba(21, 17, 10, 0.5);
+}
+/* Badge con el número de items sobre el botón de acción. */
+.toma__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--radio-pill);
+  background: var(--superficie-nocturna);
+  color: var(--coma);
+  font-family: var(--fuente-datos);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 /* ── Historial (bitácora del pedido) ───────────────────────────────────── */
@@ -157,19 +205,4 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   color: var(--tinta-fuerte);
-}
-
-/* Aviso de correcciones pendientes en el pie del pedido (bloquea el cobro). */
-.pedido__aviso-corr {
-  width: 100%;
-  border: 2px solid var(--coma);
-  background: var(--coma-tenue);
-  color: var(--tinta-fuerte);
-  border-radius: var(--radio-m);
-  padding: var(--esp-2) var(--esp-3);
-  font-family: var(--fuente-ui);
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  text-align: center;
 }

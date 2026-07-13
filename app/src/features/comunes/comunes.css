@@ -75,27 +75,27 @@
   gap: var(--esp-2);
 }
 
-/* Navegación del administrador (iconos + texto) */
+/* ── Navegación del administrador: hamburguesa + drawer (Parte 3) ───────── */
 .nav-admin {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--esp-2);
 }
-.nav-admin__item {
+/* Alerta de correcciones: siempre visible fuera del drawer. */
+.nav-admin__alerta {
   display: inline-flex;
   align-items: center;
-  gap: var(--esp-2);
-}
-/* Sección actual resaltada con el amarillo de la marca. */
-.nav-admin__item--activo {
-  background: var(--coma);
-  border-color: transparent;
+  gap: var(--esp-1);
+  min-height: var(--target-min);
+  padding: 0 var(--esp-2);
+  background: var(--coma-tenue);
+  border: 2px solid var(--coma);
+  border-radius: var(--radio-m);
   color: var(--tinta-fuerte);
+  cursor: pointer;
 }
-/* Correcciones pendientes: siempre visible con el amarillo de la marca. */
-.nav-admin__item--correcciones {
-  border-color: var(--coma);
+.nav-admin__alerta--activa {
+  background: var(--coma);
 }
 .nav-admin__badge {
   display: inline-grid;
@@ -111,10 +111,141 @@
   font-weight: 700;
   font-size: 12px;
 }
-/* En pantallas angostas, la nav muestra solo iconos para no saturar. */
-@media (max-width: 720px) {
-  .nav-admin__txt {
-    display: none;
+.nav-admin__alerta .nav-admin__badge {
+  background: var(--pare);
+  color: var(--tinta-sobre-nocturno);
+}
+.nav-admin__hamburguesa {
+  width: var(--target-min);
+  height: var(--target-min);
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--tinta-fuerte);
+  border-radius: var(--radio-m);
+}
+.nav-admin__hamburguesa:active {
+  transform: scale(0.96);
+  background: rgba(21, 17, 10, 0.06);
+}
+/* Auxiliar: solo "Salir". */
+.nav-admin__salir-aux {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-height: var(--target-min);
+  padding: 0 var(--esp-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--tinta-media);
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 14px;
+}
+
+/* Overlay + panel del drawer. */
+.nav-drawer__fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(21, 17, 10, 0.45);
+  animation: nav-fundido var(--dur-media) var(--curva);
+}
+.nav-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(84vw, 320px);
+  background: var(--superficie-2);
+  border-right: 2px solid var(--linea-fuerte);
+  box-shadow: var(--sombra-elevada);
+  padding: var(--esp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  overflow-y: auto;
+  animation: nav-entra var(--dur-media) var(--curva);
+}
+.nav-drawer__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--esp-2);
+}
+.nav-drawer__marca {
+  font-family: var(--fuente-display);
+  font-size: 22px;
+  color: var(--pare);
+}
+.nav-drawer__cerrar {
+  width: var(--target-min);
+  height: var(--target-min);
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--tinta-fuerte);
+  border-radius: var(--radio-m);
+}
+.nav-drawer__item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-height: var(--target-min);
+  padding: 0 var(--esp-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radio-m);
+  cursor: pointer;
+  color: var(--tinta-fuerte);
+  font-family: var(--fuente-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 15px;
+  text-align: left;
+}
+.nav-drawer__item:active {
+  background: rgba(21, 17, 10, 0.06);
+}
+/* Sección actual resaltada con el amarillo de la marca. */
+.nav-drawer__item--activo {
+  background: var(--coma);
+}
+.nav-drawer__item--corr {
+  border: 2px solid var(--coma);
+}
+.nav-drawer__item .nav-admin__badge {
+  margin-left: auto;
+}
+.nav-drawer__salir {
+  margin-top: var(--esp-2);
+  border-top: 1px solid var(--linea);
+  border-radius: 0;
+  color: var(--tinta-media);
+}
+@keyframes nav-fundido {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes nav-entra {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 

@@ -226,9 +226,10 @@ const fmtFechaCsv = new Intl.DateTimeFormat('es-CO', {
 });
 
 function refCsv(r: FilaVenta): string {
-  return r.tipo === 'mesa'
-    ? `Mesa ${r.mesa_numero}`
-    : `B-${String(r.turno ?? 0).padStart(2, '0')} · ${r.cliente_nombre ?? ''}`;
+  if (r.tipo === 'mesa') return `Mesa ${r.mesa_numero}`;
+  const turno = `B-${String(r.turno ?? 0).padStart(2, '0')}`;
+  // Barra instantánea: si no hay nombre, solo el turno (sin " · " colgante).
+  return r.cliente_nombre ? `${turno} · ${r.cliente_nombre}` : turno;
 }
 
 // Envuelve un valor entre comillas y escapa las internas (formato CSV).

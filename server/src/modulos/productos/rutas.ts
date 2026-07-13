@@ -18,6 +18,7 @@ import {
   desactivarProducto,
   listarCategorias,
   listarProductos,
+  masPedidos,
   obtenerMenu,
   obtenerProducto
 } from './servicio.js';
@@ -43,6 +44,12 @@ export async function rutasProductos(app: FastifyInstance): Promise<void> {
   // GET /api/menu — categorías activas con sus productos activos.
   app.get('/api/menu', { preHandler: requiereSesion }, async () => {
     return { menu: obtenerMenu() satisfies MenuAgrupado };
+  });
+
+  // GET /api/menu/mas-pedidos — los 6 más vendidos de los últimos 14 días, para
+  // el chip "MÁS PEDIDOS" de la toma. Puede venir vacío (sin historial).
+  app.get('/api/menu/mas-pedidos', { preHandler: requiereSesion }, async () => {
+    return { productos: masPedidos() satisfies Producto[] };
   });
 
   // GET /api/productos — catálogo completo (admin).

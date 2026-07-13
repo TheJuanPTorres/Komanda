@@ -6,7 +6,7 @@ import type { PedidoConItems } from '@pos/shared';
 import { useStore } from '../../estado/store.js';
 import { turnoBarra } from '../../lib/etiquetas.js';
 import { ErrorApi } from '../../lib/api.js';
-import { Boton, Campo, Modal, TarjetaMesa } from '../../design-system/index.js';
+import { TarjetaMesa } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
 import { NavAdmin } from '../comunes/NavAdmin.js';
 import { PulsoDelDia } from './PulsoDelDia.js';
@@ -24,8 +24,6 @@ export function Piso() {
   const crearBarra = useStore((s) => s.crearBarra);
 
   const [ocupado, setOcupado] = useState(false);
-  const [nuevoBarra, setNuevoBarra] = useState(false);
-  const [cliente, setCliente] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -53,13 +51,14 @@ export function Piso() {
     }
   }
 
-  async function confirmarBarra() {
-    const nombre = cliente.trim();
-    if (!nombre) return;
+  // Barra instantánea: se crea el pedido SIN pedir nombre y se entra directo a
+  // la toma. El nombre es opcional y se puede agregar después, ya adentro.
+  async function nuevoDeBarra() {
+    if (ocupado) return;
     setOcupado(true);
     setError('');
     try {
-      const p = await crearBarra(nombre);
+      const p = await crearBarra();
       navegar(`/pedido/${p.pedido.id}`);
     } catch (e) {
       setError(e instanceof ErrorApi ? e.message : 'No se pudo crear el pedido.');
@@ -113,7 +112,7 @@ export function Piso() {
                 onClick={() => navegar(`/pedido/${p.pedido.id}`)}
               />
             ))}
-            <button className="piso__nuevo" onClick={() => setNuevoBarra(true)} disabled={ocupado}>
+            <button className="piso__nuevo" onClick={nuevoDeBarra} disabled={ocupado}>
               <Plus size={24} strokeWidth={2.25} />
               Nuevo de barra
             </button>
@@ -126,36 +125,6 @@ export function Piso() {
           )}
         </section>
       </div>
-
-      {nuevoBarra && (
-        <Modal titulo="Nuevo pedido de barra" onCerrar={() => !ocupado && setNuevoBarra(false)}>
-          <Campo
-            etiqueta="Nombre del cliente"
-            value={cliente}
-            autoFocus
-            maxLength={60}
-            onChange={(e) => setCliente(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && confirmarBarra()}
-            placeholder="Ej: Pedro"
-          />
-          <div className="ds-modal__acciones">
-            <Boton
-              variante="secundario"
-              bloque
-              disabled={ocupado}
-              onClick={() => {
-                setNuevoBarra(false);
-                setCliente('');
-              }}
-            >
-              Cancelar
-            </Boton>
-            <Boton bloque disabled={ocupado || !cliente.trim()} onClick={confirmarBarra}>
-              Crear
-            </Boton>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }

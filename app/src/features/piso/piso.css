@@ -49,55 +49,49 @@
   transform: scale(0.99);
 }
 
-/* ── Pulso del día (franja admin en vivo) ─────────────────────────────── */
+/* ── Pulso del día (franja admin mínima, una línea) ───────────────────── */
 .pulso {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--esp-2);
 }
-@media (max-width: 620px) {
-  .pulso {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-.pulso__celda {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.pulso__item {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: var(--esp-3) var(--esp-2);
-  background: var(--superficie-nocturna);
-  border: none;
-  border-radius: var(--radio-l);
-  min-height: 84px;
+  gap: var(--esp-2);
+  min-height: 40px;
+  padding: 0 var(--esp-3);
+  background: var(--superficie-1);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-pill);
+  color: var(--tinta-fuerte);
+}
+/* El de correcciones es un botón; sin pendientes queda inerte y apagado. */
+.pulso__item--corr {
+  cursor: pointer;
+  font: inherit;
+}
+.pulso__item--corr:disabled {
+  cursor: default;
+  color: var(--tinta-media);
+}
+/* Con pendientes: alerta con el amarillo de la marca (nunca se esconde). */
+.pulso__item--alerta {
+  background: var(--coma-tenue);
+  border: 2px solid var(--coma);
+  color: var(--tinta-fuerte);
 }
 .pulso__num {
   font-family: var(--fuente-datos);
   font-variant-numeric: tabular-nums;
   font-weight: 500;
-  font-size: clamp(20px, 4.5vw, 30px);
-  color: var(--tinta-sobre-nocturno);
-  line-height: 1.05;
+  font-size: 18px;
+  line-height: 1;
 }
 .pulso__etq {
   font-family: var(--fuente-ui);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 11px;
-  color: var(--coma);
-}
-.pulso__celda--accion {
-  cursor: default;
-  font: inherit;
-}
-.pulso__celda--alerta {
-  cursor: pointer;
-  outline: 2px solid var(--coma);
-  outline-offset: -2px;
-}
-.pulso__celda--alerta .pulso__num {
-  color: var(--coma);
+  letter-spacing: 0.02em;
+  font-size: 12px;
 }

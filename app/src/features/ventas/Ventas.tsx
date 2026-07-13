@@ -14,7 +14,7 @@ import type {
 } from '@pos/shared';
 import { api } from '../../lib/api.js';
 import { formatearDinero } from '../../design-system/index.js';
-import { turnoBarra } from '../../lib/etiquetas.js';
+import { refBarra } from '../../lib/etiquetas.js';
 import { fechaHora } from '../../lib/fechas.js';
 import { hoyBogota, restarDias } from '../../lib/periodos.js';
 import { Boton, Chip } from '../../design-system/index.js';
@@ -34,7 +34,7 @@ function rangoDe(atajo: AtajoFecha): { desde?: string; hasta?: string } {
 }
 
 function referencia(v: VentaResumen): string {
-  return v.tipo === 'mesa' ? `Mesa ${v.mesa_numero}` : `${turnoBarra(v.turno)} · ${v.cliente_nombre ?? ''}`;
+  return v.tipo === 'mesa' ? `Mesa ${v.mesa_numero}` : refBarra(v.turno, v.cliente_nombre);
 }
 
 function IconoMetodo({ metodo }: { metodo: MetodoPago }) {

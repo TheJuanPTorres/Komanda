@@ -1,39 +1,38 @@
-// Franja "Pulso del día" del panel admin: cuatro cifras grandes en vivo. Las
-// ventas y # de pedidos vienen del servidor (se refrescan al cobrar por WS);
-// los pedidos abiertos y las correcciones pendientes se derivan del store, que
-// ya se mantiene al día por tiempo real.
+// Franja mínima del panel admin (v1.5-C, Parte 4): una sola línea con lo
+// ACCIONABLE (correcciones pendientes) y lo OPERATIVO (pedidos abiertos). Las
+// cifras de ventas viven en /ventas y en Cierre; aquí el piso es protagonista.
+// Ambos números se derivan del store, que ya se mantiene al día por WS.
 import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, ClipboardList } from 'lucide-react';
 import { useStore } from '../../estado/store.js';
-import { formatearDinero } from '../../design-system/index.js';
 
 export function PulsoDelDia() {
   const navegar = useNavigate();
-  const pulso = useStore((s) => s.pulso);
   const abiertos = useStore((s) => s.pedidos.length);
   const correcciones = useStore((s) => s.correcciones.length);
 
   return (
     <div className="pulso">
-      <div className="pulso__celda">
-        <span className="pulso__num">{formatearDinero(pulso?.ventas_hoy ?? 0)}</span>
-        <span className="pulso__etq">Ventas de hoy</span>
-      </div>
-      <div className="pulso__celda">
-        <span className="pulso__num">{pulso?.pedidos_hoy ?? 0}</span>
-        <span className="pulso__etq">Pedidos cobrados</span>
-      </div>
-      <div className="pulso__celda">
-        <span className="pulso__num">{abiertos}</span>
-        <span className="pulso__etq">Abiertos ahora</span>
-      </div>
       <button
-        className={`pulso__celda pulso__celda--accion ${correcciones > 0 ? 'pulso__celda--alerta' : ''}`}
+        className={`pulso__item pulso__item--corr ${correcciones > 0 ? 'pulso__item--alerta' : ''}`}
         onClick={() => correcciones > 0 && navegar('/correcciones')}
         disabled={correcciones === 0}
       >
+        {correcciones > 0 ? (
+          <AlertTriangle size={16} strokeWidth={2.5} />
+        ) : (
+          <ClipboardList size={16} strokeWidth={2.25} />
+        )}
         <span className="pulso__num">{correcciones}</span>
-        <span className="pulso__etq">Correcciones</span>
+        <span className="pulso__etq">
+          {correcciones === 1 ? 'corrección pendiente' : 'correcciones pendientes'}
+        </span>
       </button>
+
+      <div className="pulso__item">
+        <span className="pulso__num">{abiertos}</span>
+        <span className="pulso__etq">{abiertos === 1 ? 'pedido abierto' : 'pedidos abiertos'}</span>
+      </div>
     </div>
   );
 }

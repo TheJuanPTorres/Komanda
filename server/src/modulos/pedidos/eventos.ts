@@ -56,8 +56,9 @@ const esquemasDetalle = {
     solicitado_por: z.number().int().positive().optional()
   }),
   nota_editada: z.object({
-    nota_antes: z.string(),
-    nota_despues: z.string()
+    campo: z.enum(['nota', 'cliente_nombre']),
+    antes: z.string(),
+    despues: z.string()
   }),
   cancelado: z.object({
     motivo: z.enum(['manual', 'quedo_vacio']),

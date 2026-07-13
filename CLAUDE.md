@@ -32,6 +32,24 @@ Nada se ejecuta sin aprobación del admin.
 - NO se puede cobrar con correcciones pendientes (409 COBRO_CON_PENDIENTES).
 - Cancelar un pedido anula ('anulada') sus solicitudes pendientes en la misma tx.
 
+## Lote UX móvil (v1.5-C) — barra instantánea, drawer, historial solo-admin
+- BARRA INSTANTÁNEA: crear un pedido de barra NO pide nombre; se entra directo a
+  la toma. El pedido se identifica por su TURNO diario (B-07); cliente_nombre es
+  100% opcional y se puede nombrar/renombrar después (auxiliar y admin) vía
+  PATCH /api/pedidos/:id/cliente. En listados/placas/fichas: "B-07" si no hay
+  nombre, "B-07 · Nombre" si lo hay (helper refBarra en el front; refCsv en el
+  server). Ningún flujo (cobro, ventas, CSV, WhatsApp) asume nombre no-nulo.
+- EVENTO nota_editada: su detalle es { campo:'nota'|'cliente_nombre', antes,
+  despues } (renombrar barra reutiliza este evento). Los lectores toleran la
+  forma heredada { nota_antes, nota_despues } de eventos anteriores.
+- HISTORIAL SOLO-ADMIN: GET /api/pedidos/:id/eventos es solo admin (era la
+  herramienta de validación del admin; los auxiliares ya no lo consumen ni ven
+  la sección Historial en la toma).
+- NAV ADMIN POR DRAWER: el menú del admin es hamburguesa + drawer lateral; el
+  badge de correcciones pendientes queda SIEMPRE visible fuera del drawer.
+- MÁS PEDIDOS: GET /api/menu/mas-pedidos = 6 productos más vendidos de los
+  últimos 14 días operativos (solo cobrados, aún activos), caché en memoria 1h.
+
 ## Explorador de ventas (v1.5-B, Parte 2-3) — módulo `ventas`
 Solo admin, solo lectura. GET /api/ventas (pedidos cobrados+cancelados, filtros
 combinables desde/hasta/auxiliar/producto/metodo/tipo/estado/con_correcciones,

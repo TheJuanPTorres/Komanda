@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { VentaDetalle } from '@pos/shared';
 import { api, ErrorApi } from '../../lib/api.js';
 import { DisplayTotal, LineaPedido, formatearDinero } from '../../design-system/index.js';
-import { turnoBarra, etiquetaMetodo } from '../../lib/etiquetas.js';
+import { refBarra, etiquetaMetodo } from '../../lib/etiquetas.js';
 import { fechaLarga, hora } from '../../lib/fechas.js';
 import { describirEvento, esCorreccion } from '../../lib/eventos.js';
 import { Encabezado } from '../comunes/Encabezado.js';
@@ -34,7 +34,7 @@ export function VentaFicha() {
   const referencia = v
     ? v.tipo === 'mesa'
       ? `Mesa ${v.mesa_numero}`
-      : `${turnoBarra(v.turno)} · ${v.cliente_nombre ?? ''}`
+      : refBarra(v.turno, v.cliente_nombre)
     : 'Venta';
 
   return (

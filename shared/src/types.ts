@@ -204,10 +204,11 @@ export interface PedidoConItems {
 
 // Crear un pedido. Para 'mesa' se exige mesa_numero (1–4); si esa mesa ya
 // tiene un pedido abierto, el servidor devuelve ese en vez de crear otro.
-// Para 'barra' se exige cliente_nombre; el turno lo asigna el servidor.
+// Para 'barra' el turno lo asigna el servidor; el nombre del cliente es
+// OPCIONAL (barra instantánea): el pedido se identifica por su turno (B-07).
 export type CrearPedidoReq =
   | { tipo: 'mesa'; mesaNumero: number }
-  | { tipo: 'barra'; clienteNombre: string };
+  | { tipo: 'barra'; clienteNombre?: string };
 
 // Agregar un producto al pedido. Si ya está, se suma la cantidad.
 export interface AgregarItemReq {
@@ -223,6 +224,13 @@ export interface CambiarCantidadReq {
 // Editar la nota del pedido.
 export interface CambiarNotaReq {
   nota: string;
+}
+
+// Editar el nombre del cliente de un pedido de barra. Es opcional y puede
+// quedar vacío (cadena vacía ⇒ el pedido vuelve a identificarse solo por turno).
+// Disponible para auxiliar y admin sobre pedidos abiertos.
+export interface CambiarClienteReq {
+  cliente_nombre: string;
 }
 
 // ── Cobro (Fase 3) ───────────────────────────────────────────────────────
@@ -513,9 +521,14 @@ export interface DetalleItemEliminado extends OrigenCorreccion {
   stock_devuelto: number;
 }
 
+// Edición de un campo de texto del pedido: la nota, o el nombre del cliente de
+// barra (barra instantánea). Los eventos anteriores a v1.5-C traían la forma
+// heredada { nota_antes, nota_despues }; los lectores la toleran (ver
+// describirEvento en el front).
 export interface DetalleNotaEditada {
-  nota_antes: string;
-  nota_despues: string;
+  campo: 'nota' | 'cliente_nombre';
+  antes: string;
+  despues: string;
 }
 
 export interface DetalleCancelado {

@@ -7,7 +7,7 @@ import { Check, X } from 'lucide-react';
 import type { SolicitudCorreccion } from '@pos/shared';
 import { ErrorApi } from '../../lib/api.js';
 import { useStore } from '../../estado/store.js';
-import { turnoBarra } from '../../lib/etiquetas.js';
+import { refBarra } from '../../lib/etiquetas.js';
 import { Boton, Modal } from '../../design-system/index.js';
 import { Encabezado } from '../comunes/Encabezado.js';
 import { NavAdmin } from '../comunes/NavAdmin.js';
@@ -24,9 +24,7 @@ function hace(creadoEn: string): string {
 }
 
 function refPedido(s: SolicitudCorreccion): string {
-  return s.pedido_tipo === 'mesa'
-    ? `Mesa ${s.mesa_numero}`
-    : `${turnoBarra(s.turno)} · ${s.cliente_nombre ?? ''}`;
+  return s.pedido_tipo === 'mesa' ? `Mesa ${s.mesa_numero}` : refBarra(s.turno, s.cliente_nombre);
 }
 
 export function Correcciones() {
