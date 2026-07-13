@@ -47,6 +47,10 @@ Nada se ejecuta sin aprobación del admin.
   la sección Historial en la toma).
 - NAV ADMIN POR DRAWER: el menú del admin es hamburguesa + drawer lateral; el
   badge de correcciones pendientes queda SIEMPRE visible fuera del drawer.
+- PEDIDO VACÍO SE ABANDONA: si se abre una mesa/barra y se sale sin agregar
+  nada, el pedido (en $0, sin items) se elimina solo. POST /pedidos/:id/abandonar
+  (cualquier sesión; el servidor SOLO actúa si de verdad está vacío, evento
+  cancelado motivo 'quedo_vacio'). El front lo llama al desmontar la toma.
 
 ## Explorador de ventas (v1.5-B, Parte 2-3) — módulo `ventas`
 Solo admin, solo lectura. GET /api/ventas (pedidos cobrados+cancelados, filtros

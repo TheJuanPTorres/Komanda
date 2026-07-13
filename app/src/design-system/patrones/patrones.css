@@ -179,7 +179,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  align-items: flex-start;
 }
 .fila-menu__nombre {
   font-family: var(--fuente-ui);
@@ -193,11 +194,6 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.fila-menu__linea {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-2);
-}
 .fila-menu__precio {
   font-family: var(--fuente-datos);
   font-weight: 500;
@@ -205,6 +201,8 @@
   font-size: 16px;
   color: var(--tinta-fuerte);
 }
+/* Tag de stock en su propia línea (no comparte fila con el precio): así el
+   texto no se mueve cuando el control cambia de ancho al agregar. */
 .fila-menu__badge {
   display: inline-flex;
   align-items: center;
@@ -225,11 +223,15 @@
   border: 1.5px solid var(--pare);
   color: var(--pare);
 }
-/* Control de cantidad a la derecha. */
+/* Control de cantidad a la derecha. Ancho RESERVADO = ancho del stepper, para
+   que la columna de texto no se reacomode al pasar de "+" a [− n +]. El "+"
+   solitario queda alineado a la derecha dentro de ese espacio. */
 .fila-menu__ctrl {
   flex: none;
+  min-width: 124px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   user-select: none; /* nada de selección de texto en los controles */
 }
 .fila-menu__mas {

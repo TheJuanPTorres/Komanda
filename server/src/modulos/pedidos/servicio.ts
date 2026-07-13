@@ -421,6 +421,36 @@ export function cambiarCliente(pedidoId: number, clienteNombre: string, usuarioI
   return obtenerPedidoConItems(pedidoId)!;
 }
 
+/**
+ * Limpia un pedido que quedó VACÍO (sin items): si el usuario abre una mesa o
+ * barra y se sale sin agregar nada, no debe quedar una placa "ocupada" en $0.
+ * Solo actúa si el pedido está abierto y NO tiene items; disponible para
+ * cualquier sesión (no es una venta ni toca dinero, así que no rompe la regla
+ * de que solo el admin cancela pedidos con productos). Devuelve true si lo
+ * canceló. Idempotente: si ya no aplica, devuelve false sin error.
+ */
+export function abandonarSiVacio(pedidoId: number, usuarioId: number): boolean {
+  const operar = db.transaction((): boolean => {
+    const pedido = obtenerPedido(pedidoId);
+    if (!pedido || pedido.estado !== 'abierto') return false;
+    const quedan = db
+      .prepare('SELECT COUNT(*) AS n FROM pedido_items WHERE pedido_id = ?')
+      .get(pedidoId) as { n: number };
+    if (quedan.n > 0) return false; // tiene productos: no se toca
+    db.prepare(
+      "UPDATE pedidos SET estado = 'cancelado', cerrado_en = datetime('now'), cerrado_por = ? WHERE id = ?"
+    ).run(usuarioId, pedidoId);
+    registrarEvento({
+      pedidoId,
+      usuarioId,
+      tipo: 'cancelado',
+      detalle: { motivo: 'quedo_vacio', total_al_cancelar: 0 }
+    });
+    return true;
+  });
+  return operar();
+}
+
 /** Cancela un pedido abierto (solo admin). Devuelve el stock de sus items. */
 export function cancelarPedido(pedidoId: number, adminId: number): void {
   const operar = db.transaction((): number[] => {

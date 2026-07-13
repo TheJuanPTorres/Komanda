@@ -76,6 +76,19 @@ export function TomarPedido() {
     cargarCorreccionesPedido(pedidoId).catch(() => {});
   }, [pedidoId, cargarCorreccionesPedido]);
 
+  // Al salir de la toma: si el pedido quedó ABIERTO y VACÍO (se abrió una mesa/
+  // barra y no se agregó nada), se elimina para no dejar una placa en $0. Lee el
+  // estado fresco del store en el cleanup (evita cerrar sobre datos viejos).
+  useEffect(() => {
+    return () => {
+      const est = useStore.getState();
+      const actual = est.pedidos.find((x) => x.pedido.id === pedidoId);
+      if (actual && actual.pedido.estado === 'abierto' && actual.items.length === 0) {
+        est.abandonarPedidoVacio(pedidoId);
+      }
+    };
+  }, [pedidoId]);
+
   useEffect(() => {
     if (pedido) {
       setBuscando(false);

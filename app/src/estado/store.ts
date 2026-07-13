@@ -64,6 +64,8 @@ interface EstadoApp {
   quitarItem: (pedidoId: number, itemId: number) => Promise<PedidoConItems>;
   cambiarNota: (pedidoId: number, nota: string) => Promise<void>;
   cambiarCliente: (pedidoId: number, clienteNombre: string) => Promise<void>;
+  // Al salir de la toma con el pedido vacío: se elimina (limpieza silenciosa).
+  abandonarPedidoVacio: (pedidoId: number) => Promise<void>;
   cancelarPedido: (pedidoId: number) => Promise<void>;
   cobrar: (pedidoId: number, pagos: PagoReq[]) => Promise<void>;
 
@@ -235,6 +237,18 @@ export const useStore = create<EstadoApp>((set, get) => ({
       cliente_nombre: clienteNombre
     });
     get().aplicarPedido(pedido);
+  },
+
+  abandonarPedidoVacio: async (pedidoId) => {
+    // Limpieza silenciosa: el servidor solo elimina si de verdad está vacío.
+    try {
+      const { eliminado } = await api.post<{ eliminado: boolean }>(
+        `/api/pedidos/${pedidoId}/abandonar`
+      );
+      if (eliminado) get().quitarPedidoLocal(pedidoId);
+    } catch {
+      /* si falla, el pedido vacío queda; no es crítico */
+    }
   },
 
   cancelarPedido: async (pedidoId) => {

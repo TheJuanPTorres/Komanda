@@ -56,14 +56,14 @@ export function FilaMenu({
         </span>
         <span className="fila-menu__datos">
           <span className="fila-menu__nombre">{nombre}</span>
-          <span className="fila-menu__linea">
-            <span className="fila-menu__precio">{formatearDinero(precio)}</span>
-            {agotado ? (
-              <span className="fila-menu__badge fila-menu__badge--agotado">Agotado</span>
-            ) : stock !== undefined ? (
-              <span className="fila-menu__badge fila-menu__badge--stock">Quedan {stock}</span>
-            ) : null}
-          </span>
+          {/* El tag de stock va en su propia línea, bajo el título: así el texto
+              no se desacomoda cuando aparece el stepper (control más ancho). */}
+          {agotado ? (
+            <span className="fila-menu__badge fila-menu__badge--agotado">Agotado</span>
+          ) : stock !== undefined ? (
+            <span className="fila-menu__badge fila-menu__badge--stock">Quedan {stock}</span>
+          ) : null}
+          <span className="fila-menu__precio">{formatearDinero(precio)}</span>
         </span>
       </button>
 

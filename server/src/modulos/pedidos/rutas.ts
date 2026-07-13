@@ -14,6 +14,7 @@ import { requiereRol, requiereSesion } from '../auth/middleware.js';
 import { emisor } from '../../ws/emisor.js';
 import { listarEventos } from './eventos.js';
 import {
+  abandonarSiVacio,
   abrirMesa,
   agregarItem,
   cambiarCantidad,
@@ -149,5 +150,15 @@ export async function rutasPedidos(app: FastifyInstance): Promise<void> {
     cancelarPedido(id, req.user.id);
     emisor.pedidoCancelado({ pedidoId: id });
     return { ok: true };
+  });
+
+  // POST /api/pedidos/:id/abandonar — al salir de la toma sin agregar nada, el
+  // pedido vacío se elimina (cualquier sesión; el servidor solo actúa si está
+  // vacío, así no se abusa para anular pedidos con productos).
+  app.post('/api/pedidos/:id/abandonar', { preHandler: requiereSesion }, async (req) => {
+    const { id } = idParam.parse(req.params);
+    const eliminado = abandonarSiVacio(id, req.user.id);
+    if (eliminado) emisor.pedidoCancelado({ pedidoId: id });
+    return { eliminado };
   });
 }
