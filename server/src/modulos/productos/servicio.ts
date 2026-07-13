@@ -7,7 +7,6 @@ import type {
   MenuAgrupado,
   Producto
 } from '@pos/shared';
-import { diaOperativo, rangoUtcDesdeFechas } from '../../lib/fechas.js';
 
 interface FilaCategoria {
   id: number;
@@ -65,51 +64,6 @@ export function obtenerMenu(): MenuAgrupado {
     const productos = (productosPorCategoria.all(c.id) as FilaProducto[]).map(aProducto);
     return { id: c.id, nombre: c.nombre, orden: c.orden, activo: c.activo === 1, productos };
   });
-}
-
-// ── "Más pedidos" (v1.5-C, Parte 5.1) ──────────────────────────────────────
-// Los 6 productos más vendidos (por unidades) de los últimos 14 días operativos,
-// contando SOLO pedidos cobrados, y que sigan activos (para poder agregarse).
-// El 80% de los pedidos repite los mismos productos: este atajo ahorra casi
-// toda la navegación. Cálculo con caché simple de 1 hora (negocio chico).
-const CACHE_MAS_PEDIDOS_MS = 60 * 60 * 1000;
-const TOPE_MAS_PEDIDOS = 6;
-let cacheMasPedidos: { productos: Producto[]; expira: number } | null = null;
-
-function calcularMasPedidos(): Producto[] {
-  const hoy = diaOperativo();
-  // 14 días operativos incluyendo hoy ⇒ desde el día operativo de hace 13 días.
-  const hace13 = diaOperativo(new Date(Date.now() - 13 * 24 * 60 * 60 * 1000));
-  const { desdeUtc, hastaUtc } = rangoUtcDesdeFechas(hace13, hoy);
-
-  const filas = db
-    .prepare(
-      `SELECT pi.producto_id AS id, SUM(pi.cantidad) AS unidades
-         FROM pedido_items pi
-         JOIN pedidos p ON p.id = pi.pedido_id
-        WHERE p.estado = 'cobrado' AND p.cerrado_en >= ? AND p.cerrado_en < ?
-        GROUP BY pi.producto_id
-        ORDER BY unidades DESC, pi.producto_id`
-    )
-    .all(desdeUtc, hastaUtc) as Array<{ id: number; unidades: number }>;
-
-  // Conserva el orden de más vendidos, quedándose solo con los que siguen
-  // activos (un producto dado de baja no debe ofrecerse). Tope de 6.
-  const productos: Producto[] = [];
-  for (const f of filas) {
-    const p = obtenerProductoActivo(f.id);
-    if (p) productos.push(p);
-    if (productos.length >= TOPE_MAS_PEDIDOS) break;
-  }
-  return productos;
-}
-
-/** Los productos más vendidos (últimos 14 días), con caché de 1 hora. */
-export function masPedidos(): Producto[] {
-  if (!cacheMasPedidos || cacheMasPedidos.expira < Date.now()) {
-    cacheMasPedidos = { productos: calcularMasPedidos(), expira: Date.now() + CACHE_MAS_PEDIDOS_MS };
-  }
-  return cacheMasPedidos.productos;
 }
 
 /** Busca un producto activo por id (para tomar el snapshot al agregar item). */

@@ -57,7 +57,6 @@ export function TomarPedido() {
   const [cobrando, setCobrando] = useState(false);
   const [porEliminar, setPorEliminar] = useState<PedidoItem | null>(null);
   const [porCorregir, setPorCorregir] = useState<PedidoItem | null>(null);
-  const [masPedidos, setMasPedidos] = useState<Producto[]>([]);
   const [catActiva, setCatActiva] = useState<string>('');
   const [nombre, setNombre] = useState('');
 
@@ -76,14 +75,6 @@ export function TomarPedido() {
   useEffect(() => {
     cargarCorreccionesPedido(pedidoId).catch(() => {});
   }, [pedidoId, cargarCorreccionesPedido]);
-
-  // "Más pedidos": chip inicial con los más vendidos (puede venir vacío).
-  useEffect(() => {
-    api
-      .get<{ productos: Producto[] }>('/api/menu/mas-pedidos')
-      .then((r) => setMasPedidos(r.productos))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (pedido) {
@@ -107,14 +98,12 @@ export function TomarPedido() {
     if (pedido?.pedido.tipo === 'barra') setNombre(pedido.pedido.cliente_nombre ?? '');
   }, [pedido?.pedido.cliente_nombre, pedido?.pedido.tipo]);
 
-  const secciones = useMemo<Seccion[]>(() => {
-    const base = menu.map((c) => ({ key: `c${c.id}`, nombre: c.nombre, productos: c.productos }));
-    return masPedidos.length > 0
-      ? [{ key: 'mas', nombre: 'Más pedidos', productos: masPedidos }, ...base]
-      : base;
-  }, [menu, masPedidos]);
+  const secciones = useMemo<Seccion[]>(
+    () => menu.map((c) => ({ key: `c${c.id}`, nombre: c.nombre, productos: c.productos })),
+    [menu]
+  );
 
-  // Chip activo por defecto: el primero (Más pedidos si existe).
+  // Chip activo por defecto: la primera categoría.
   useEffect(() => {
     if (secciones.length > 0 && !secciones.some((s) => s.key === catActiva)) {
       setCatActiva(secciones[0]!.key);

@@ -47,8 +47,6 @@ Nada se ejecuta sin aprobación del admin.
   la sección Historial en la toma).
 - NAV ADMIN POR DRAWER: el menú del admin es hamburguesa + drawer lateral; el
   badge de correcciones pendientes queda SIEMPRE visible fuera del drawer.
-- MÁS PEDIDOS: GET /api/menu/mas-pedidos = 6 productos más vendidos de los
-  últimos 14 días operativos (solo cobrados, aún activos), caché en memoria 1h.
 
 ## Explorador de ventas (v1.5-B, Parte 2-3) — módulo `ventas`
 Solo admin, solo lectura. GET /api/ventas (pedidos cobrados+cancelados, filtros
